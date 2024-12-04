@@ -1,16 +1,14 @@
 import dotenv
-from sqlalchemy import URL, create_engine, Column, Integer, String, ForeignKey, DateTime, TIMESTAMP, Text, Sequence
-from sqlalchemy.orm import relationship, sessionmaker, declarative_base
+import dotenv
+from sqlalchemy import URL, create_engine
+from sqlalchemy.orm import sessionmaker, registry
+
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, TIMESTAMP, Text, Sequence
+from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.sql import func
 
 
 Base = declarative_base()
-dotenv_path = '.env'
-# pg_user = dotenv.get_key(dotenv_path, 'pg_username')
-# pg_password = dotenv.get_key(dotenv_path, 'pg_password')
-# pg_port = dotenv.get_key(dotenv_path, 'pg_port')
-# pg_database = dotenv.get_key(dotenv_path, 'pg_database')
-# pg_host = dotenv.get_key(dotenv_path, 'pg_host')
 
 
 class User(Base):
@@ -29,6 +27,9 @@ class User(Base):
 
     # Relationship with users_words
     users_words = relationship("UsersWords", back_populates="user")
+
+    def __str__(self):
+        return f'{self.id}. {self.username} ({self.email})'
 
 
 class Word(Base):
@@ -104,6 +105,8 @@ class UsersWords(Base):
     topic = relationship("Topic", back_populates="users_words")
     word_example = relationship("WordExample")
 
+    users_words_topics = relationship("UsersWordsTopics", back_populates="user_words")
+
 
 class UsersWordsTopics(Base):
     __tablename__ = 'users_words_topics'
@@ -117,7 +120,11 @@ class UsersWordsTopics(Base):
     topic = relationship("Topic", back_populates="users_words_topics")
 
 
+
+
+dotenv_path = '.env'
 url_object = URL.create(
+    # 'postgresql+pg8000',
     'postgresql+psycopg2',
     username=dotenv.get_key(dotenv_path, 'pg_username'),
     password=dotenv.get_key(dotenv_path, 'pg_password'),
@@ -126,12 +133,10 @@ url_object = URL.create(
     database=dotenv.get_key(dotenv_path, 'pg_database'),
 )
 
-print(url_object)
 engine = create_engine(url_object, echo=True)
+
 
 Base.metadata.create_all(engine)
 
 Session = sessionmaker(bind=engine)
 session = Session()
-
-
