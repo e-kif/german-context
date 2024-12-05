@@ -19,7 +19,7 @@ class User(Base):
     email = Column(String, nullable=False, unique=True)
     password = Column(String)
     last_login = Column(DateTime)
-    login_attempts = Column(Integer, nullable=False)
+    login_attempts = Column(Integer, nullable=True)
     last_activity = Column(DateTime)
     created_at = Column(TIMESTAMP, server_default=func.now())
     streak = Column(Integer)

@@ -1,6 +1,6 @@
 import datetime
 import sqlalchemy.exc
-from fastapi import FastAPI, Path
+from fastapi import FastAPI, Path, Response, status
 from typing import Annotated, Any
 
 from data.schemas import *
@@ -28,16 +28,22 @@ async def get_user(user_id: Annotated[int, Path(ge=0, title='User ID')]) -> Any:
 
 
 @app.post("/users")
-async def add_user(user: UserIn) -> UserBase:
+async def add_user(user: UserIn, response: Response) -> UserOut | dict:
     db_user = User(username=user.username,
                    email=user.email,
                    created_at=datetime.now(),
                    streak=0,
                    level=user.level,
                    password=user.password)
-    session.add(db_user)
-    session.commit()
-    session.refresh(db_user)
+    try:
+        session.add(db_user)
+        session.commit()
+        session.refresh(db_user)
+    except sqlalchemy.exc.IntegrityError as e:
+        error = [line for line in str(e).split('\n') if line.startswith('DETAIL')][0]
+        response.status_code = status.HTTP_400_BAD_REQUEST
+        session.rollback()
+        return {'error': error}
     return db_user
 
 
