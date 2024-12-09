@@ -1,5 +1,7 @@
+import os
+
 import dotenv
-import dotenv
+from dotenv import load_dotenv
 from sqlalchemy import URL, create_engine
 from sqlalchemy.orm import sessionmaker, registry
 
@@ -9,6 +11,7 @@ from sqlalchemy.sql import func
 
 
 Base = declarative_base()
+load_dotenv()
 
 
 class User(Base):
@@ -19,7 +22,7 @@ class User(Base):
     email = Column(String, nullable=False, unique=True)
     password = Column(String)
     last_login = Column(DateTime)
-    login_attempts = Column(Integer, nullable=False)
+    login_attempts = Column(Integer)
     last_activity = Column(DateTime)
     created_at = Column(TIMESTAMP, server_default=func.now())
     streak = Column(Integer)
@@ -120,17 +123,14 @@ class UsersWordsTopics(Base):
     topic = relationship("Topic", back_populates="users_words_topics")
 
 
-
-
-dotenv_path = '.env'
 url_object = URL.create(
     # 'postgresql+pg8000',
     'postgresql+psycopg2',
-    username=dotenv.get_key(dotenv_path, 'pg_username'),
-    password=dotenv.get_key(dotenv_path, 'pg_password'),
-    host=dotenv.get_key(dotenv_path, 'pg_host'),
-    port=dotenv.get_key(dotenv_path, 'pg_port'),
-    database=dotenv.get_key(dotenv_path, 'pg_database'),
+    username=os.getenv('pg_username'),
+    password=os.getenv('pg_password'),
+    host=os.getenv('pg_host'),
+    port=os.getenv('pg_port'),
+    database=os.getenv('pg_database')
 )
 
 engine = create_engine(url_object, echo=True)
