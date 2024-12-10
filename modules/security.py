@@ -2,8 +2,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 import jwt
-from fastapi import Depends, FastAPI, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from passlib.context import CryptContext
 from pydantic import BaseModel
@@ -11,7 +11,7 @@ import sqlalchemy
 
 
 from data.models import session, User
-from data.schemas import UserIn, UserBase
+from data.schemas import UserIn
 
 SECRET_KEY = "195fe54ddc316ae85d2beeae5cb1b4a5c8d8c05b7c4aaf1307989a84ffa8028d"
 ALGORITHM = "HS256"
