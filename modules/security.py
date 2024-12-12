@@ -7,11 +7,10 @@ from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from passlib.context import CryptContext
 from pydantic import BaseModel
-import sqlalchemy
 
 
-from data.models import session, User
-from data.schemas import UserIn
+from data.database_manager import db_manager
+from data.schemas import UserIn, UserOut
 
 SECRET_KEY = "195fe54ddc316ae85d2beeae5cb1b4a5c8d8c05b7c4aaf1307989a84ffa8028d"
 ALGORITHM = "HS256"
@@ -40,11 +39,7 @@ def get_password_hash(password: str) -> str:
 
 
 def get_user(username: str) -> UserIn | str:
-    try:
-        user = session.query(User).filter(User.username == username).one()
-    except sqlalchemy.exc.NoResultFound:
-        return f'User "{username}" not found'
-    return user
+    return db_manager.get_user_by_username(username)
 
 
 def authenticate_user(username: str, password: str):
@@ -52,7 +47,9 @@ def authenticate_user(username: str, password: str):
     if not user:
         return False
     if not verify_password(password, user.password):
+        db_manager.add_user_login_attempts(user.id)
         return False
+    db_manager.update_user_last_login(user.id)
     return user
 
 
@@ -88,7 +85,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
 
 
 async def get_current_active_user(
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[UserOut, Depends(get_current_user)],
 ):
     # if current_user.disabled:
     #     raise HTTPException(status_code=400, detail="Inactive user")
@@ -96,4 +93,5 @@ async def get_current_active_user(
 
 
 if __name__ == '__main__':
-    print(authenticate_user('string2', 'string'))
+    # print(authenticate_user('string2', 'string'))
+    print(authenticate_user('stefka', 'stefka'))

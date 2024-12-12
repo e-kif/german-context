@@ -10,7 +10,7 @@ from sqlalchemy.sql import func
 
 
 Base = declarative_base()
-load_dotenv()
+# load_dotenv()
 
 
 class User(Base):
@@ -135,10 +135,10 @@ url_object = URL.create(
     database=os.getenv('pg_database')
 )
 
-engine = create_engine(url_object, echo=True)
-
-
-Base.metadata.create_all(engine)
-
-Session = sessionmaker(bind=engine)
-session = Session()
+# engine = create_engine(url_object, echo=True)
+#
+#
+# Base.metadata.create_all(engine)
+#
+# Session = sessionmaker(bind=engine)
+# session = Session()
