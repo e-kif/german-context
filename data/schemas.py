@@ -11,9 +11,9 @@ class UserBase(BaseModel):
 
 class UserOut(UserBase):
     id: int
-    last_login: datetime.datetime = None
-    login_attempts: int = 0
-    last_activity: datetime.datetime = None
+    last_login: datetime.datetime | None = None
+    login_attempts: int | None = 0
+    last_activity: datetime.datetime | None = None
     created_at: datetime.datetime = datetime.datetime.now()
     streak: int = 0
 

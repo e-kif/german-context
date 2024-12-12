@@ -1,6 +1,5 @@
 import os
 
-import dotenv
 from dotenv import load_dotenv
 from sqlalchemy import URL, create_engine
 from sqlalchemy.orm import sessionmaker, registry
