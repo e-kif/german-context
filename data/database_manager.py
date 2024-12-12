@@ -13,6 +13,9 @@ class DataManager:
         Session = sessionmaker(bind=self._engine)
         self.session = Session()
 
+    def get_users(self):
+        return self.session.query(User).all()
+
     def get_user_by_id(self, user_id: int):
         try:
             result = self.session.query(User).filter(User.id == user_id).one()
@@ -51,7 +54,7 @@ db_manager = DataManager(url_object)
 
 
 def db_test():
-    print(db_manager.get_user_by_id(18))
+    print(db_manager.get_users())
 
 
 if __name__ == '__main__':

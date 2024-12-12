@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.encoders import jsonable_encoder
 from typing import Annotated, Any
 
-
+from data.database_manager import db_manager
 from data.schemas import *
 from data.models import User, session
 from modules.security import (get_password_hash,
@@ -26,13 +26,17 @@ async def home():
 
 @app.get("/users")
 async def get_users() -> list[UserOut]:
-    users = session.query(User).all()
-    return users
+    return db_manager.get_users()
 
 
 @app.get("/user/{user_id}", response_model=UserOut)
 async def get_user(user_id: Annotated[int, Path(ge=0, title='User ID')]) -> Any:
-    user = session.query(User).filter(User.id == user_id).one()
+    user = db_manager.get_user_by_id(user_id)
+    if isinstance(user, str):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=user
+        )
     return user
 
 
