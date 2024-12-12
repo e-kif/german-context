@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 from pydantic import BaseModel, EmailStr
 from typing import Literal
 
@@ -11,10 +11,10 @@ class UserBase(BaseModel):
 
 class UserOut(UserBase):
     id: int
-    last_login: datetime | None = None
-    login_attempts: int | None = 0
-    last_activity: datetime | None = None
-    created_at: datetime = datetime.now()
+    last_login: datetime.datetime | None = None
+    login_attempts: int = 0
+    last_activity: datetime.datetime | None = None
+    created_at: datetime.datetime = datetime.datetime.now()
     streak: int = 0
 
 
