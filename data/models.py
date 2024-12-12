@@ -1,16 +1,9 @@
-import os
-
-from dotenv import load_dotenv
-from sqlalchemy import URL, create_engine
-from sqlalchemy.orm import sessionmaker, registry
-
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, TIMESTAMP, Text, Sequence
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.sql import func
 
 
 Base = declarative_base()
-# load_dotenv()
 
 
 class User(Base):
@@ -123,22 +116,3 @@ class UsersWordsTopics(Base):
     # Relationships with users_words and topic
     user_words = relationship("UsersWords", back_populates="users_words_topics")
     topic = relationship("Topic", back_populates="users_words_topics")
-
-
-url_object = URL.create(
-    # 'postgresql+pg8000',
-    'postgresql+psycopg2',
-    username=os.getenv('pg_username'),
-    password=os.getenv('pg_password'),
-    host=os.getenv('pg_host'),
-    port=os.getenv('pg_port'),
-    database=os.getenv('pg_database')
-)
-
-# engine = create_engine(url_object, echo=True)
-#
-#
-# Base.metadata.create_all(engine)
-#
-# Session = sessionmaker(bind=engine)
-# session = Session()

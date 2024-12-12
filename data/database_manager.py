@@ -93,8 +93,7 @@ class DataManager:
 
 load_dotenv()
 url_object = URL.create(
-    # 'postgresql+pg8000',
-    'postgresql+psycopg2',
+    drivername='postgresql+psycopg2',
     username=os.getenv('pg_username'),
     password=os.getenv('pg_password'),
     host=os.getenv('pg_host'),

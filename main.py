@@ -1,6 +1,5 @@
 from fastapi import FastAPI, Path, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi.encoders import jsonable_encoder
 from typing import Annotated, Any
 
 from data.database_manager import db_manager
