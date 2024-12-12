@@ -79,6 +79,17 @@ class DataManager:
             user.login_attempts += 1
             self.session.commit()
 
+    def update_user(self, user_id: int, username: str, email: str, password: str, level: str):
+        user = self.get_user_by_id(user_id)
+        if isinstance(user, str):
+            return user
+        user.username = username
+        user.email = email
+        user.password = password
+        user.level = level
+        self.session.commit()
+        return user
+
 
 load_dotenv()
 url_object = URL.create(

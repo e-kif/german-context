@@ -50,13 +50,17 @@ async def add_user(user: UserIn) -> UserBase:
 
 @app.put("/user/{user_id}", response_model=UserOut)
 async def update_user(user_id: Annotated[int, Path(title='User ID', ge=1)], user: UserIn):
-    update_user_encoded = jsonable_encoder(user)
-    user = db_manager.get_user_by_id(user_id)
-    if isinstance(user, str):
+    updated_user = db_manager.update_user(
+        user_id=user_id,
+        username=user.username,
+        email=user.email,
+        password=get_password_hash(user.password),
+        level=user.level
+    )
+    if isinstance(updated_user, str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=user)
-    user = update_user_encoded
-    return user
+                            detail=updated_user)
+    return updated_user
 
 
 @app.delete("/user/{user_id}")

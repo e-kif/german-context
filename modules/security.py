@@ -93,5 +93,4 @@ async def get_current_active_user(
 
 
 if __name__ == '__main__':
-    # print(authenticate_user('string2', 'string'))
-    print(authenticate_user('stefka', 'stefka'))
+    print(authenticate_user('string', 'string'))
