@@ -1,3 +1,9 @@
+fastapi[standard]
 python-dotenv
 sqlalchemy
 psycopg2-binary
+random
+os
+pyjwt
+passlib[bcrypt]
+requests
