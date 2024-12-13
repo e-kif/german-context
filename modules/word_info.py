@@ -33,10 +33,10 @@ def get_word_from_soup(soup: BeautifulSoup) -> tuple[str, BeautifulSoup]:
     return soup.find('div', attrs={'class': 'rCntr rClear'}).text.strip(), soup
 
 
-def get_word_level_and_type(soup: BeautifulSoup) -> tuple[str, str] | None:
+def get_word_level_and_type(soup: BeautifulSoup) -> tuple[str, str] | tuple[None, None]:
     card = soup.find('section', attrs={'class': 'rBox rBoxWht'})
     if not card:
-        return None
+        return None, None
     info = card.find('p', attrs={'class': 'rInf'}).find('span')
     if info:
         level = card.find('p', attrs={'class': 'rInf'}).find('span').text.strip()
@@ -51,8 +51,11 @@ def get_word_level_and_type(soup: BeautifulSoup) -> tuple[str, str] | None:
     return level, word_type
 
 
-def get_word_translation(soup: BeautifulSoup) -> str:
-    translation = soup.find('dd', attrs={'lang': 'en'}).find_all('span')[1].text.strip()
+def get_word_translation(soup: BeautifulSoup) -> str | None:
+    div = soup.find('dd', attrs={'lang': 'en'})
+    if not div:
+        return None
+    translation = div.find_all('span')[1].text.strip()
     return translation
 
 
@@ -87,4 +90,4 @@ def get_word_info(word: str) -> dict:
 
 
 if __name__ == '__main__':
-    print(get_word_info('es'))
+    print(get_word_info('personalbezogen'))
