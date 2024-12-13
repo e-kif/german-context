@@ -90,6 +90,44 @@ class DataManager:
         self.session.commit()
         return user
 
+    def get_word_type_id(self, word_type: str) -> int:
+        try:
+            word_type_db = self.session.query(WordType).filter_by(name=word_type).one()
+        except exc.NoResultFound:
+            word_type_db = WordType(word_type=word_type)
+            self.session.add(word_type_db)
+            self.session.commit()
+            self.session.refresh(word_type_db)
+        return word_type_db.id
+
+    def add_new_word(self, user_id: int, word: dict) -> Word | str:
+        example = {'word': 'das Mädchen',
+                   'level': 'A1',
+                   'word_type': 'Noun',
+                   'translation': 'girl, maid, girlfriend, lassie',
+                   'example': ['Alle Mädchen lachten.', 'All the girls were laughing.']}
+        word_type_id = self.get_word_type_id(word['word_type'])
+        new_word = Word(
+            word=word['word'],
+            word_type_id=word_type_id,
+            level=word['level'],
+            english=word['translation']
+        )
+        try:
+            self.session.add(new_word)
+            self.session.commit()
+            self.session.refresh(new_word)
+        except exc.IntegrityError as error:
+            self.session.rollback()
+            new_word = self.session.query(Word).filter_by(word=word['word']).one()
+
+        example = WordExample(
+            word_id=new_word.id,
+            example=word.get('example')[0],
+            translation=word.get('example')[1]
+        )
+        return new_word
+
 
 load_dotenv()
 url_object = URL.create(

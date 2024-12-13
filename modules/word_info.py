@@ -18,7 +18,7 @@ def get_soup_from_url(url: str) -> BeautifulSoup:
         return soup
 
 
-def get_word_from_soup(soup: BeautifulSoup) -> tuple[str, BeautifulSoup]:
+def get_word_from_soup(soup: BeautifulSoup) -> tuple[str, BeautifulSoup | None]:
     word = soup.find('div', attrs={'class': 'rCntr rClear'})
     if word:
         if '\n' in word.text.strip():
@@ -27,7 +27,7 @@ def get_word_from_soup(soup: BeautifulSoup) -> tuple[str, BeautifulSoup]:
         return word.text.strip(), soup
     url_object = soup.find('a', attrs={'class': 'rKnpf rNoSelect rKnUnt rKnObn'})
     if not url_object:
-        return soup.find('i').text.strip(), soup
+        return soup.find('i').text.strip(), None
     new_url = url_object.attrs['href']
     soup = get_soup_from_url(new_url)
     return soup.find('div', attrs={'class': 'rCntr rClear'}).text.strip(), soup
@@ -76,6 +76,8 @@ def get_word_example(soup: BeautifulSoup) -> list[str]:
 def get_word_info(word: str) -> dict:
     soup = get_soup_for_word(word)
     word, soup = get_word_from_soup(soup)
+    if not soup:
+        return {'error': word}
     word_info = {'word': word}
     level, word_type = get_word_level_and_type(soup)
     translation = get_word_translation(soup)
@@ -90,4 +92,4 @@ def get_word_info(word: str) -> dict:
 
 
 if __name__ == '__main__':
-    print(get_word_info('personalbezogen'))
+    print(get_word_info('regal'))

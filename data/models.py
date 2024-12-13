@@ -34,10 +34,10 @@ class Word(Base):
     __tablename__ = 'words'
 
     id = Column(Integer, Sequence('word_id_seq'), primary_key=True)
-    word = Column(String)
-    word_type_id = Column(Integer, ForeignKey('word_types.id'))
-    english = Column(String)
-    level = Column(String)
+    word = Column(String, unique=True, nullable=False)
+    word_type_id = Column(Integer, ForeignKey('word_types.id'), nullable=False)
+    english = Column(String, nullable=False)
+    level = Column(String, nullable=False)
 
     # Relationship with word_type
     word_type = relationship("WordType", back_populates="words")
@@ -65,7 +65,7 @@ class WordType(Base):
     __tablename__ = 'word_types'
 
     id = Column(Integer, Sequence('word_type_id_seq'), primary_key=True)
-    name = Column(String)
+    name = Column(String, unique=True, nullable=False)
     questions = Column(String)
 
     # Relationship with words
@@ -77,7 +77,7 @@ class WordExample(Base):
 
     id = Column(Integer, Sequence('word_example_id_seq'), primary_key=True)
     word_id = Column(Integer, ForeignKey('words.id'))
-    example = Column(Text)
+    example = Column(Text, unique=True)
     translation = Column(Text)
 
     # Relationship with word
