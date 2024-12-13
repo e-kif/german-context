@@ -20,3 +20,23 @@ class UserOut(UserBase):
 
 class UserIn(UserBase):
     password: str
+
+
+class WordIn(BaseModel):
+    word: str
+
+
+class WordOut(WordIn):
+    id: int
+    word_type_id: int
+    english: str
+    level: str
+
+
+class TopicIn(BaseModel):
+    name: str
+    description: str | None = None
+
+
+class TopicOut(TopicIn):
+    id: int
