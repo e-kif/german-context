@@ -12,8 +12,7 @@ class DataManager:
     def __init__(self, database_url_object):
         self._engine = create_engine(database_url_object, echo=False)
         Base.metadata.create_all(self._engine)
-        Session = sessionmaker(bind=self._engine)
-        self.session = Session()
+        self.session = sessionmaker(bind=self._engine)()
 
     def get_users(self):
         return self.session.query(User).all()
@@ -27,14 +26,14 @@ class DataManager:
 
     def get_user_by_username(self, username):
         try:
-            result = self.session.query(User).filter(User.username == username).one()
+            result = self.session.query(User).filter(username=username).one()
         except exc.NoResultFound:
             result = f'User with username "{username}" was not found.'
         return result
 
     def get_user_by_email(self, email):
         try:
-            result = self.session.query(User).filter(User.email == email).one()
+            result = self.session.query(User).filter_by(email=email).one()
         except exc.NoResultFound:
             result = f'User with E-Mail "{email}" was not found.'
         return result
@@ -58,7 +57,7 @@ class DataManager:
 
     def delete_user(self, user_id):
         try:
-            delete_user = self.session.query(User).filter(User.id == user_id).one()
+            delete_user = self.session.query(User).filter_by(id=user_id).one()
         except exc.NoResultFound:
             return f'User with id={user_id} was not found.'
         self.session.delete(delete_user)
@@ -143,4 +142,4 @@ db_manager = DataManager(url_object)
 
 
 if __name__ == '__main__':
-    db_manager.update_user_last_login(34)
+    print(db_manager.get_users())
