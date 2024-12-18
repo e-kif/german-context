@@ -53,7 +53,7 @@ class Topic(Base):
     __tablename__ = 'topics'
 
     id = Column(Integer, Sequence('topic_id_seq'), primary_key=True)
-    name = Column(String)
+    name = Column(String, unique=True)
     description = Column(String)
 
     # Relationships with users_words and users_words_topics
@@ -93,8 +93,8 @@ class UsersWords(Base):
     custom_translation = Column(String, default=None)
     example = Column(Integer, ForeignKey('words_examples.id'))
     topic_id = Column(Integer, ForeignKey('topics.id'))
-    fails = Column(Integer)
-    success = Column(Integer)
+    fails = Column(Integer, default=0)
+    success = Column(Integer, default=0)
     last_shown = Column(DateTime)
 
     # Relationships with word, user, topic, and example

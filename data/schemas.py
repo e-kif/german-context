@@ -22,6 +22,12 @@ class UserIn(UserBase):
     password: str
 
 
+class UserPatch(BaseModel):
+    username: str | None = None
+    email: EmailStr | None = None
+    password: str | None = None
+    level: Literal['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] | None = None
+
 class WordIn(BaseModel):
     word: str
 

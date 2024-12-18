@@ -62,6 +62,19 @@ async def update_user(user_id: Annotated[int, Path(title='User ID', ge=1)], user
     return updated_user
 
 
+@app.patch("/user/{user_id}", response_model=UserOut)
+async def patch_user(user_id: Annotated[int, Path(title='User ID', ge=1)], user: UserPatch):
+    db_user = db_manager.get_user_by_id(user_id)
+    if isinstance(db_user, str):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=db_user)
+    stored_user_model = UserIn(**db_user.__dict__)
+    update_data = user.dict(exclude_unset=True)
+    updated_user = stored_user_model.copy(update=update_data)
+    db_user_updated = await update_user(user_id, updated_user)
+    return db_user_updated
+
+
 @app.delete("/user/{user_id}")
 async def remove_user(user_id: Annotated[int, Path(title='User ID', ge=1)]):
     delete_user = db_manager.delete_user(user_id)

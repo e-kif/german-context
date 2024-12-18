@@ -1,5 +1,7 @@
 import os
 import datetime
+from typing import Any
+
 from dotenv import load_dotenv
 from sqlalchemy import URL, create_engine, exc
 from sqlalchemy.orm import sessionmaker
@@ -78,7 +80,7 @@ class DataManager:
             user.login_attempts += 1
             self.session.commit()
 
-    def update_user(self, user_id: int, username: str, email: str, password: str, level: str):
+    def update_user(self, user_id: int, username: str, email: str, password: str, level: str) -> type[User] | str:
         user = self.get_user_by_id(user_id)
         if isinstance(user, str):
             return user
@@ -87,9 +89,10 @@ class DataManager:
         user.password = password
         user.level = level
         self.session.commit()
+        self.session.refresh(user)
         return user
 
-    def get_word_type_id(self, word_type: str) -> int:
+    def get_word_type(self, word_type: str) -> WordType:
         try:
             word_type_db = self.session.query(WordType).filter_by(name=word_type).one()
         except exc.NoResultFound:
@@ -97,34 +100,105 @@ class DataManager:
             self.session.add(word_type_db)
             self.session.commit()
             self.session.refresh(word_type_db)
-        return word_type_db.id
+        return word_type_db
 
-    def add_new_word(self, user_id: int, word: dict) -> Word | str:
-        example = {'word': 'das Mädchen',
-                   'level': 'A1',
-                   'word_type': 'Noun',
-                   'translation': 'girl, maid, girlfriend, lassie',
-                   'example': ['Alle Mädchen lachten.', 'All the girls were laughing.']}
-        word_type_id = self.get_word_type_id(word['word_type'])
+    def add_word_example_id(self, word_id: int, example: list[str]) -> id:
+        try:
+            db_example = self.session.query(WordExample).filter_by(example=example[0]).one()
+        except exc.NoResultFound:
+            db_example = WordExample(
+                word_id=word_id,
+                example=example[0],
+                translation=example[1]
+            )
+            self.session.add(db_example)
+            self.session.commit()
+            self.session.refresh(db_example)
+        return db_example.id
+
+    def add_topic(self, topic: str, description: str | None = None) -> Topic:
+        try:
+            db_topic = self.session.query(Topic).filter_by(name=topic).one
+        except exc.NoResultFound:
+            db_topic = Topic(
+                name=topic,
+                description=description
+            )
+            self.session.add(db_topic)
+            self.session.commit()
+            self.session.refresh(db_topic)
+        return db_topic
+
+    def get_topic_by_id(self, topic: str) -> Topic:
+        pass
+
+    def get_word_by_id(self, word_id: int) -> Word:
+        pass
+
+    def get_word_by_word(self, word: str) -> Word:
+        pass
+
+    def get_user_word_by_id(self, user_word_id: int) -> UsersWords:
+        pass
+
+    def add_user_word(self,
+                      user_id: int,
+                      word: dict,
+                      example: list | None = None,
+                      topic: str | None = None,
+                      topic_description: str | None = None,
+                      translation: str | None = None) -> Word | str:
+        db_word = self.add_new_word(word)
+        if isinstance(db_word, str):
+            return db_word
+        user_word = UsersWords(
+            word_id=db_word.id,
+            user_id=user_id,
+            last_shown=datetime.datetime(1, 1, 1)
+        )
+        if not example and word.get('example'):
+            db_example = self.add_word_example(db_word.id, example[0], example[1])
+            user_word.example = db_example.id
+        if not topic:
+            topic = 'Default'
+        db_topic = self.add_topic(topic)
+        user_word.topic_id = db_topic.id
+        if translation:
+            user_word.custom_translation = translation
+        self.session.add(user_word)
+        self.session.commit()
+        self.session.refresh(user_word)
+        return user_word
+
+    def add_word_example(self, word_id: int, example: str, translation: str) -> WordExample:
+        try:
+            db_example = self.session.query(WordExample).filter_by(example=example).one()
+        except exc.NoResultFound:
+            db_example = WordExample(
+                word_id=word_id,
+                example=example,
+                translation=translation
+            )
+            self.session.add(db_example)
+            self.session.commit()
+            self.session.refresh(db_example)
+        return db_example
+
+    def add_new_word(self, word: dict) -> Word | str:
+        db_word = self.get_word_by_word(word['word'])
+        if isinstance(db_word, Word):
+            return db_word
+
+        word_type = self.get_word_type(word['word_type'])
         new_word = Word(
             word=word['word'],
-            word_type_id=word_type_id,
+            word_type_id=word_type.id,
             level=word['level'],
             english=word['translation']
         )
-        try:
-            self.session.add(new_word)
-            self.session.commit()
-            self.session.refresh(new_word)
-        except exc.IntegrityError as error:
-            self.session.rollback()
-            new_word = self.session.query(Word).filter_by(word=word['word']).one()
-
-        example = WordExample(
-            word_id=new_word.id,
-            example=word.get('example')[0],
-            translation=word.get('example')[1]
-        )
+        self.session.add(new_word)
+        self.session.commit()
+        self.session.refresh(new_word)
         return new_word
 
 
@@ -139,7 +213,6 @@ url_object = URL.create(
 )
 
 db_manager = DataManager(url_object)
-
 
 if __name__ == '__main__':
     print(db_manager.get_users())
