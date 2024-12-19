@@ -10,6 +10,7 @@ from modules.security import (Token,
                               get_current_active_user,
                               create_access_token,
                               get_password_hash)
+from modules.word_info import get_word_info
 
 app = FastAPI()
 
@@ -112,6 +113,21 @@ async def read_users_me(
 @app.get("/users/me/words/")
 async def read_own_items(
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
-):
+) -> list[WordOut]:
     user_id = current_user.id
     return current_user
+
+
+@app.post("/users/me/words")
+async def add_user_word(
+        current_user: Annotated[UserOut, Depends(get_current_active_user)],
+        word: WordIn
+) -> WordOut:
+    parsed_word = get_word_info(word.word)
+    db_user_word = db_manager.add_user_word(user_id=current_user.id,
+                                            word=parsed_word,
+                                            example=word.example,
+                                            topic=word.topic,
+                                            translation=word.translation)
+    print(db_user_word)
+    return db_user_word
