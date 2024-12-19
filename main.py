@@ -70,8 +70,8 @@ async def patch_user(user_id: Annotated[int, Path(title='User ID', ge=1)], user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=db_user)
     stored_user_model = UserIn(**db_user.__dict__)
-    update_data = user.dict(exclude_unset=True)
-    updated_user = stored_user_model.copy(update=update_data)
+    update_data = user.model_dump(exclude_unset=True)
+    updated_user = stored_user_model.model_copy(update=update_data)
     db_user_updated = await update_user(user_id, updated_user)
     return db_user_updated
 
@@ -129,5 +129,16 @@ async def add_user_word(
                                             example=word.example,
                                             topic=word.topic,
                                             translation=word.translation)
-    print(db_user_word)
-    return db_user_word
+
+    word_out = WordOut(
+        word=db_user_word.word.word,
+        id=db_user_word.id,
+        word_type=db_user_word.word.word_type.name,
+        english=db_user_word.word.english,
+        level=db_user_word.word.level,
+        topic=db_user_word.topic.name,
+        example=[db_user_word.word_example.example, db_user_word.word_example.translation]
+    )
+    if db_user_word.custom_translation:
+        word_out.english = db_user_word.custom_translation
+    return word_out

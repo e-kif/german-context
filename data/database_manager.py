@@ -92,7 +92,7 @@ class DataManager:
         self.session.refresh(user)
         return user
 
-    def get_word_type(self, word_type: str) -> WordType:
+    def add_word_type(self, word_type: str) -> WordType:
         try:
             db_word_type = self.session.query(WordType).filter_by(name=word_type).one()
         except exc.NoResultFound:
@@ -100,6 +100,13 @@ class DataManager:
             self.session.add(db_word_type)
             self.session.commit()
             self.session.refresh(db_word_type)
+        return db_word_type
+
+    def get_word_type(self, word_type_id: int) -> WordType | str:
+        try:
+            db_word_type = self.session.query(WordType).filter_by(id=word_type_id).one()
+        except exc.NoResultFound:
+            db_word_type = f'Word type with id={word_type_id} was not found'
         return db_word_type
 
     def add_word_example_id(self, word_id: int, example: list[str]) -> id:
@@ -132,8 +139,12 @@ class DataManager:
     def get_topic_by_id(self, topic: str) -> Topic:
         pass
 
-    def get_word_by_id(self, word_id: int) -> Word:
-        pass
+    def get_word_by_id(self, word_id: int) -> type[Word]:
+        try:
+            db_word = self.session.query(Word).filter_by(id=word_id).one()
+        except exc.NoResultFound:
+            db_word = f'Word with id={word_id} was not found.'
+        return db_word
 
     def get_word_by_word(self, word: str) -> type(Word) | dict:
         try:
@@ -196,7 +207,7 @@ class DataManager:
         if isinstance(db_word, Word):
             return db_word
 
-        word_type = self.get_word_type(word['word_type'])
+        word_type = self.add_word_type(word['word_type'])
         new_word = Word(
             word=word['word'],
             word_type_id=word_type.id,

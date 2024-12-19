@@ -41,9 +41,11 @@ class WordIn(WordBase):
 
 class WordOut(WordBase):
     id: int
-    word_type_id: int
+    word_type: str
     english: str
     level: str
+    topic: str
+    example: list[str] | None
 
 
 class TopicIn(BaseModel):
