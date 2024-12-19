@@ -28,7 +28,7 @@ class DataManager:
 
     def get_user_by_username(self, username):
         try:
-            result = self.session.query(User).filter(username=username).one()
+            result = self.session.query(User).filter_by(username=username).one()
         except exc.NoResultFound:
             result = f'User with username "{username}" was not found.'
         return result
@@ -94,13 +94,13 @@ class DataManager:
 
     def get_word_type(self, word_type: str) -> WordType:
         try:
-            word_type_db = self.session.query(WordType).filter_by(name=word_type).one()
+            db_word_type = self.session.query(WordType).filter_by(name=word_type).one()
         except exc.NoResultFound:
-            word_type_db = WordType(word_type=word_type)
-            self.session.add(word_type_db)
+            db_word_type = WordType(name=word_type)
+            self.session.add(db_word_type)
             self.session.commit()
-            self.session.refresh(word_type_db)
-        return word_type_db
+            self.session.refresh(db_word_type)
+        return db_word_type
 
     def add_word_example_id(self, word_id: int, example: list[str]) -> id:
         try:
@@ -118,7 +118,7 @@ class DataManager:
 
     def add_topic(self, topic: str, description: str | None = None) -> Topic:
         try:
-            db_topic = self.session.query(Topic).filter_by(name=topic).one
+            db_topic = self.session.query(Topic).filter_by(name=topic).one()
         except exc.NoResultFound:
             db_topic = Topic(
                 name=topic,
@@ -135,8 +135,12 @@ class DataManager:
     def get_word_by_id(self, word_id: int) -> Word:
         pass
 
-    def get_word_by_word(self, word: str) -> Word:
-        pass
+    def get_word_by_word(self, word: str) -> type(Word) | dict:
+        try:
+            db_word = self.session.query(Word).filter_by(word=word).one()
+            return db_word
+        except exc.NoResultFound:
+            return {'error': 'No word "{word}" found.'}
 
     def get_user_word_by_id(self, user_word_id: int) -> UsersWords:
         pass
@@ -149,14 +153,17 @@ class DataManager:
                       topic_description: str | None = None,
                       translation: str | None = None) -> Word | str:
         db_word = self.add_new_word(word)
-        if isinstance(db_word, str):
-            return db_word
+        # if isinstance(db_word, str):
+        #     return db_word
         user_word = UsersWords(
             word_id=db_word.id,
             user_id=user_id,
             last_shown=datetime.datetime(1, 1, 1)
         )
         if not example and word.get('example'):
+            db_example = self.add_word_example(db_word.id, word['example'][0], word['example'][1])
+            user_word.example = db_example.id
+        elif example:
             db_example = self.add_word_example(db_word.id, example[0], example[1])
             user_word.example = db_example.id
         if not topic:
@@ -184,7 +191,7 @@ class DataManager:
             self.session.refresh(db_example)
         return db_example
 
-    def add_new_word(self, word: dict) -> Word | str:
+    def add_new_word(self, word: dict) -> Word:
         db_word = self.get_word_by_word(word['word'])
         if isinstance(db_word, Word):
             return db_word
