@@ -39,14 +39,15 @@ class Word(Base):
     english = Column(String, nullable=False)
     level = Column(String, nullable=False)
 
-    # Relationship with word_type
-    word_type = relationship("WordType", back_populates="words")
+    word_type = relationship("WordType", cascade="all, delete", back_populates="words")
+    users_words = relationship("UsersWords", cascade="all, delete", back_populates="word")
+    examples = relationship("WordExample", cascade="all, delete", back_populates="word")
 
-    # Relationship with users_words
-    users_words = relationship("UsersWords", back_populates="word")
+    def __str__(self):
+        return f'{self.id}. {self.word} ({self.level}) - {self.english}'
 
-    # Relationship with word_examples
-    examples = relationship("WordExample", back_populates="word")
+    def __repr__(self):
+        return f'{self.id}. {self.word} ({self.level}) - {self.english}'
 
 
 class Topic(Base):
@@ -56,9 +57,14 @@ class Topic(Base):
     name = Column(String, unique=True)
     description = Column(String)
 
-    # Relationships with users_words and users_words_topics
-    users_words = relationship("UsersWords", back_populates="topic")
-    users_words_topics = relationship("UsersWordsTopics", back_populates="topic")
+    users_words = relationship("UsersWords", cascade="all, delete", back_populates="topic")
+    users_words_topics = relationship("UsersWordsTopics", cascade="all, delete", back_populates="topic")
+
+    def __str__(self):
+        return f'{self.id}. {self.name}'
+
+    def __repr__(self):
+        return f'{self.id}. {self.name}'
 
 
 class WordType(Base):
@@ -69,7 +75,13 @@ class WordType(Base):
     questions = Column(String)
 
     # Relationship with words
-    words = relationship("Word", back_populates="word_type")
+    words = relationship("Word", cascade="all, delete", back_populates="word_type")
+
+    def __str__(self):
+        return f'{self.id}. {self.name}'
+
+    def __repr__(self):
+        return f'{self.id}. {self.name}'
 
 
 class WordExample(Base):
@@ -80,8 +92,13 @@ class WordExample(Base):
     example = Column(Text, unique=True)
     translation = Column(Text)
 
-    # Relationship with word
-    word = relationship("Word", back_populates="examples")
+    word = relationship("Word", cascade="all, delete", back_populates="examples")
+
+    def __str__(self):
+        return f'{self.id}. word_id={self.word_id}: {self.example} - {self.translation}'
+
+    def __repr__(self):
+        return f'{self.id}. word_id={self.word_id}: {self.example} - {self.translation}'
 
 
 class UsersWords(Base):
@@ -97,13 +114,19 @@ class UsersWords(Base):
     success = Column(Integer, default=0)
     last_shown = Column(DateTime)
 
-    # Relationships with word, user, topic, and example
-    word = relationship("Word", back_populates="users_words")
-    user = relationship("User", back_populates="users_words")
-    topic = relationship("Topic", back_populates="users_words")
-    word_example = relationship("WordExample")
+    word = relationship("Word", cascade="all, delete", back_populates="users_words")
+    user = relationship("User", cascade="all, delete", back_populates="users_words")
+    topic = relationship("Topic", cascade="all, delete", back_populates="users_words")
+    word_example = relationship("WordExample", cascade="all, delete", back_populates="users_words")
+    users_words_topics = relationship("UsersWordsTopics", cascade="all, delete", back_populates="user_words")
 
-    users_words_topics = relationship("UsersWordsTopics", back_populates="user_words")
+    def __str__(self):
+        return (f'{self.id}. word_id={self.word_id} '
+                f'(fails={self.fails}, success={self.success}, last_shown={self.last_shown}')
+
+    def __repr__(self):
+        return (f'{self.id}. word_id={self.word_id} '
+                f'(fails={self.fails}, success={self.success}, last_shown={self.last_shown}')
 
 
 class UsersWordsTopics(Base):
@@ -114,5 +137,5 @@ class UsersWordsTopics(Base):
     topic_id = Column(Integer, ForeignKey('topics.id'))
 
     # Relationships with users_words and topic
-    user_words = relationship("UsersWords", back_populates="users_words_topics")
-    topic = relationship("Topic", back_populates="users_words_topics")
+    user_words = relationship("UsersWords", cascade="all, delete", back_populates="users_words_topics")
+    topic = relationship("Topic", cascade="all, delete", back_populates="users_words_topics")
