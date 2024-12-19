@@ -60,7 +60,12 @@ def get_word_translation(soup: BeautifulSoup) -> str | None:
 
 
 def get_word_example(soup: BeautifulSoup) -> list[str]:
-    examples = soup.find('ul', attrs={'class': 'rLst rLstGt'})
+    cards_titles = soup.find_all('h2')
+    examples = []
+    for title in cards_titles:
+        if 'example' in title.text.lower():
+            examples = title.parent.parent.find('ul', attrs={'class': 'rLst rLstGt'})
+
     if not examples:
         return []
     examples = examples.find_all('li')
@@ -92,4 +97,7 @@ def get_word_info(word: str) -> dict:
 
 
 if __name__ == '__main__':
-    print(get_word_info('regal'))
+    # print(get_word_info('schreiben'))
+    # print(get_word_info('es'))
+    print(get_word_info('weich'))
+    # print(get_word_info('tisch'))
