@@ -114,8 +114,22 @@ async def read_users_me(
 async def read_own_items(
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
 ) -> list[WordOut]:
-    user_id = current_user.id
-    return current_user
+    db_users_words = db_manager.get_user_words(current_user.id)
+    users_words_out = []
+    for user_word in db_users_words:
+        one_word = WordOut(
+                id=user_word.id,
+                word=user_word.word.word,
+                word_type=user_word.word.word_type.name,
+                english=user_word.word.english,
+                level=user_word.word.level,
+                topic=user_word.topic.name,
+                example=[user_word.word_example.example, user_word.word_example.translation]
+            )
+        if user_word.custom_translation:
+            one_word.english = user_word.custom_translation
+        users_words_out.append(one_word)
+    return users_words_out
 
 
 @app.post("/users/me/words")
@@ -124,12 +138,15 @@ async def add_user_word(
         word: WordIn
 ) -> WordOut:
     parsed_word = get_word_info(word.word)
+    the_word = parsed_word.get('word', word.word)
+    if db_manager.user_has_word(current_user, the_word):
+        raise HTTPException(status_code=409,
+                            detail=f"User '{current_user.username}' already has word '{the_word}'.")
     db_user_word = db_manager.add_user_word(user_id=current_user.id,
                                             word=parsed_word,
                                             example=word.example,
                                             topic=word.topic,
                                             translation=word.translation)
-
     word_out = WordOut(
         word=db_user_word.word.word,
         id=db_user_word.id,

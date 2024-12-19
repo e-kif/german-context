@@ -146,15 +146,19 @@ class DataManager:
             db_word = f'Word with id={word_id} was not found.'
         return db_word
 
-    def get_word_by_word(self, word: str) -> type(Word) | dict:
+    def get_word_by_word(self, word: str) -> type(Word) | str:
         try:
             db_word = self.session.query(Word).filter_by(word=word).one()
             return db_word
         except exc.NoResultFound:
-            return {'error': 'No word "{word}" found.'}
+            return f'No word "{word}" found.'
 
     def get_user_word_by_id(self, user_word_id: int) -> UsersWords:
         pass
+
+    def get_user_words(self, user_id: int) -> list[type[UsersWords]]:
+        db_users_words = self.session.query(UsersWords).filter_by(user_id=user_id).all()
+        return db_users_words
 
     def add_user_word(self,
                       user_id: int,
@@ -202,6 +206,19 @@ class DataManager:
             self.session.refresh(db_example)
         return db_example
 
+    def user_has_word(self, user_id: int, word: str):
+        db_word = self.get_word_by_word(word)
+        if isinstance(db_word, str):
+            return False
+        try:
+            self.session.query(UsersWords).filter_by(user_id=user_id, word_id=db_word.id).first()
+            return True
+        except exc.NoResultFound:
+            return False
+
+    def get_user_word_by_word(self, user_id, word: str) -> UsersWords:
+        pass
+
     def add_new_word(self, word: dict) -> Word:
         db_word = self.get_word_by_word(word['word'])
         if isinstance(db_word, Word):
@@ -233,4 +250,4 @@ url_object = URL.create(
 db_manager = DataManager(url_object)
 
 if __name__ == '__main__':
-    print(db_manager.get_users())
+    print(db_manager.get_user_words(37))

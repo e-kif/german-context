@@ -40,7 +40,7 @@ class Word(Base):
     level = Column(String, nullable=False)
 
     word_type = relationship("WordType", cascade="all, delete", back_populates="words")
-    users_words = relationship("UsersWords", cascade="all, delete", back_populates="word")
+    users_word = relationship("UsersWords", cascade="all, delete", back_populates="word")
     examples = relationship("WordExample", cascade="all, delete", back_populates="word")
 
     def __str__(self):
@@ -115,7 +115,7 @@ class UsersWords(Base):
     success = Column(Integer, default=0)
     last_shown = Column(DateTime)
 
-    word = relationship("Word", back_populates="users_words")
+    word = relationship("Word", back_populates="users_word")
     user = relationship("User", cascade="all, delete", back_populates="users_words")
     topic = relationship("Topic", cascade="all, delete", back_populates="users_words")
     users_words_topics = relationship("UsersWordsTopics", cascade="all, delete", back_populates="user_words")
