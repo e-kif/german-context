@@ -11,6 +11,7 @@ from modules.security import (Token,
                               create_access_token,
                               get_password_hash)
 from modules.word_info import get_word_info
+import modules.serialization as serialization
 
 app = FastAPI()
 
@@ -103,7 +104,7 @@ async def login_for_access_token(
     return Token(access_token=access_token, token_type="bearer")
 
 
-@app.get("/users/me/", response_model=UserBase)
+@app.get("/users/me/", response_model=UserOut)
 async def read_users_me(
         current_user: Annotated[UserBase, Depends(get_current_active_user)],
 ):
@@ -117,18 +118,7 @@ async def read_own_items(
     db_users_words = db_manager.get_user_words(current_user.id)
     users_words_out = []
     for user_word in db_users_words:
-        one_word = WordOut(
-                id=user_word.id,
-                word=user_word.word.word,
-                word_type=user_word.word.word_type.name,
-                english=user_word.word.english,
-                level=user_word.word.level,
-                topic=user_word.topic.name,
-                example=[user_word.word_example.example, user_word.word_example.translation]
-            )
-        if user_word.custom_translation:
-            one_word.english = user_word.custom_translation
-        users_words_out.append(one_word)
+        users_words_out.append(serialization.word_out_from_user_word(user_word))
     return users_words_out
 
 
@@ -140,22 +130,27 @@ async def add_user_word(
     parsed_word = get_word_info(word.word)
     the_word = parsed_word.get('word', word.word)
     if db_manager.user_has_word(current_user, the_word):
-        raise HTTPException(status_code=409,
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                             detail=f"User '{current_user.username}' already has word '{the_word}'.")
     db_user_word = db_manager.add_user_word(user_id=current_user.id,
                                             word=parsed_word,
                                             example=word.example,
                                             topic=word.topic,
                                             translation=word.translation)
-    word_out = WordOut(
-        word=db_user_word.word.word,
-        id=db_user_word.id,
-        word_type=db_user_word.word.word_type.name,
-        english=db_user_word.word.english,
-        level=db_user_word.word.level,
-        topic=db_user_word.topic.name,
-        example=[db_user_word.word_example.example, db_user_word.word_example.translation]
-    )
-    if db_user_word.custom_translation:
-        word_out.english = db_user_word.custom_translation
-    return word_out
+    return serialization.word_out_from_user_word(db_user_word)
+
+
+@app.delete("/users/me/words/{user_word_id}")
+async def remove_user_word(
+        current_user: Annotated[UserOut, Depends(get_current_active_user)],
+        user_word_id: Annotated[int, Path(ge=1)]
+) -> WordOut | None:
+    the_word = db_manager.get_user_word_by_id(user_word_id)
+    if isinstance(the_word, str):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=the_word)
+    if current_user.id != the_word.user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="User can remove only his words.")
+    db_manager.remove_user_word(user_word_id)
+    return serialization.word_out_from_user_word(the_word)

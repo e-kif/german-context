@@ -153,8 +153,12 @@ class DataManager:
         except exc.NoResultFound:
             return f'No word "{word}" found.'
 
-    def get_user_word_by_id(self, user_word_id: int) -> UsersWords:
-        pass
+    def get_user_word_by_id(self, user_word_id: int) -> UsersWords | str:
+        try:
+            db_user_word = self.session.query(UsersWords).filter_by(id=user_word_id).one()
+        except exc.NoResultFound:
+            db_user_word = f'User word with id={user_word_id} was not found.'
+        return db_user_word
 
     def get_user_words(self, user_id: int) -> list[type[UsersWords]]:
         db_users_words = self.session.query(UsersWords).filter_by(user_id=user_id).all()
@@ -235,6 +239,15 @@ class DataManager:
         self.session.commit()
         self.session.refresh(new_word)
         return new_word
+
+    def remove_user_word(self, user_word_id) -> UsersWords | str:
+        try:
+            db_user_word = self.session.query(UsersWords).filter_by(id=user_word_id).one()
+            self.session.delete(db_user_word)
+            self.session.commit()
+        except exc.NoResultFound:
+            db_user_word = f'No user word with id={user_word_id} was found.'
+        return db_user_word
 
 
 load_dotenv()
