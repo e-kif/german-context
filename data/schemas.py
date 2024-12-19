@@ -28,11 +28,18 @@ class UserPatch(BaseModel):
     password: str | None = None
     level: Literal['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] | None = None
 
-class WordIn(BaseModel):
+
+class WordBase(BaseModel):
     word: str
 
 
-class WordOut(WordIn):
+class WordIn(WordBase):
+    translation: str | None = None
+    topic: str | None = None
+    example: list[str] | None = None
+
+
+class WordOut(WordBase):
     id: int
     word_type_id: int
     english: str
