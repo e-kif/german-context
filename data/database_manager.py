@@ -3,7 +3,7 @@ import datetime
 from typing import Any
 
 from dotenv import load_dotenv
-from sqlalchemy import URL, create_engine, exc
+from sqlalchemy import URL, create_engine, exc, text
 from sqlalchemy.orm import sessionmaker
 
 from data.models import Base, User, Word, UsersWords, UsersWordsTopics, Topic, WordType, WordExample
@@ -54,6 +54,7 @@ class DataManager:
             self.session.refresh(new_user)
         except exc.IntegrityError as error:
             self.session.rollback()
+            self.session.execute(text("SELECT SETVAL('user_id_seq', (SELECT COALESCE(MAX(id)) FROM users), true)"))
             return error.args[0].split('\n')[1].split(':')[1].strip()
         return new_user
 
@@ -215,7 +216,7 @@ class DataManager:
         if isinstance(db_word, str):
             return False
         try:
-            self.session.query(UsersWords).filter_by(user_id=user_id, word_id=db_word.id).first()
+            self.session.query(UsersWords).filter_by(user_id=user_id, word_id=db_word.id).one()
             return True
         except exc.NoResultFound:
             return False
@@ -263,4 +264,7 @@ url_object = URL.create(
 db_manager = DataManager(url_object)
 
 if __name__ == '__main__':
-    print(db_manager.get_user_words(37))
+    # print(db_manager.get_user_words(1))
+    print(db_manager.user_has_word(1, 'radiergumi'))
+
+

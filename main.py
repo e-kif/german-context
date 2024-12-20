@@ -128,8 +128,19 @@ async def add_user_word(
         word: WordIn
 ) -> WordOut:
     parsed_word = get_word_info(word.word)
+    if isinstance(parsed_word, str) and not all([word.translation, word.level, word.word_type]):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=parsed_word + " Provide following values: 'translation', 'level', 'word_type'.")
+    elif isinstance(parsed_word, str):
+        parsed_word = dict(
+            word=word.word,
+            translation=word.translation,
+            level=word.level,
+            word_type=word.word_type,
+            topic=word.topic
+        )
     the_word = parsed_word.get('word', word.word)
-    if db_manager.user_has_word(current_user, the_word):
+    if db_manager.user_has_word(current_user.id, the_word):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                             detail=f"User '{current_user.username}' already has word '{the_word}'.")
     db_user_word = db_manager.add_user_word(user_id=current_user.id,

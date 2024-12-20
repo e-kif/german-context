@@ -10,11 +10,12 @@ def word_out_from_user_word(user_word: UsersWords) -> WordOut:
         word_type=user_word.word.word_type.name,
         english=user_word.word.english,
         level=user_word.word.level,
-        topic=user_word.topic.name,
-        example=[user_word.word_example.example, user_word.word_example.translation]
+        topic=user_word.topic.name
     )
     if user_word.custom_translation:
         word_out.english = user_word.custom_translation
+    if user_word.word_example:
+        word_out.example = [user_word.word_example.example, user_word.word_example.translation]
     return word_out
 
 

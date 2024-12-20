@@ -78,11 +78,11 @@ def get_word_example(soup: BeautifulSoup) -> list[str]:
     return [example1, example2]
 
 
-def get_word_info(word: str) -> dict:
+def get_word_info(word: str) -> dict | str:
     soup = get_soup_for_word(word)
     word, soup = get_word_from_soup(soup)
     if not soup:
-        return {'error': word}
+        return word
     word_info = {'word': word}
     level, word_type = get_word_level_and_type(soup)
     translation = get_word_translation(soup)
@@ -99,5 +99,4 @@ def get_word_info(word: str) -> dict:
 if __name__ == '__main__':
     # print(get_word_info('schreiben'))
     # print(get_word_info('es'))
-    print(get_word_info('weich'))
-    # print(get_word_info('tisch'))
+    print(get_word_info('tisch'))
