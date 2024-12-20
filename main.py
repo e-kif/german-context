@@ -112,7 +112,7 @@ async def read_users_me(
 
 
 @app.get("/users/me/words/")
-async def read_own_items(
+async def read_own_words(
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
 ) -> list[WordOut]:
     db_users_words = db_manager.get_user_words(current_user.id)
@@ -165,3 +165,23 @@ async def remove_user_word(
                             detail="User can remove only his words.")
     db_manager.remove_user_word(user_word_id)
     return serialization.word_out_from_user_word(the_word)
+
+
+@app.patch("/users/me/words/{user_word_id}")
+async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
+                          current_user: Annotated[UserOut, Depends(get_current_active_user)],
+                          word: WordPatch) -> WordOut:
+    db_user_word = db_manager.get_user_word_by_id(user_word_id)
+    if isinstance(db_user_word, str):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=db_user_word)
+    if db_user_word.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="User can update only his words.")
+    stored_word_model = WordOut(**serialization.word_out_from_user_word(db_user_word).__dict__)
+    update_data = word.model_dump(exclude_unset=True)
+    updated_user_word = stored_word_model.model_copy(update=update_data)
+    print(updated_user_word)
+    # todo check translation update (users_words.custom_translation)
+    # todo implement db update
+    return updated_user_word

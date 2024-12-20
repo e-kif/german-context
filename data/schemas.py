@@ -38,7 +38,9 @@ class WordIn(WordBase):
     topic: str | None = None
     example: list[str] | None = None
     level: Literal['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] | None = None
-    word_type: Literal['Noun', 'Verb', 'Adjective', 'Pronoun', 'Preposition', 'Conjunction', 'Adverb', 'Article'] | None = None
+    word_type: Literal['Noun', 'Verb', 'Adjective',
+                       'Pronoun', 'Preposition', 'Conjunction',
+                       'Adverb', 'Article'] | None = None
 
 
 class WordOut(WordBase):
@@ -47,7 +49,11 @@ class WordOut(WordBase):
     english: str
     level: str
     topic: str
-    example: list[str] | None
+    example: list[str] | None = None
+
+
+class WordPatch(WordIn):
+    word: str | None = None
 
 
 class TopicIn(BaseModel):
