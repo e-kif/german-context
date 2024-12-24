@@ -22,8 +22,13 @@ def get_word_from_soup(soup: BeautifulSoup) -> tuple[str, BeautifulSoup | None]:
     word = soup.find('div', attrs={'class': 'rCntr rClear'})
     if word:
         if '\n' in word.text.strip():
-            parts = word.text.strip().split('\n')
-            return f'{parts[1]} {parts[0].replace(",", "")}', soup
+            parts_new = word.text.replace('\n', '').split(',')
+            if len(parts_new) == 2:
+                return ' '.join(parts_new[::-1]), soup
+            the_word = parts_new[0]
+            article = ", ".join([art.strip() for art in parts_new if art.strip()[0] == art.strip()[0].lower()])
+            return f'{article} {the_word}', soup
+            # return f'{parts[1]} {parts[0].replace(",", "")}', soup
         return word.text.strip(), soup
     url_object = soup.find('a', attrs={'class': 'rKnpf rNoSelect rKnUnt rKnObn'})
     if not url_object:
@@ -65,11 +70,10 @@ def get_word_example(soup: BeautifulSoup) -> list[str]:
     for title in cards_titles:
         if 'example' in title.text.lower():
             examples = title.parent.parent.find('ul', attrs={'class': 'rLst rLstGt'})
-
     if not examples:
         return []
     examples = examples.find_all('li')
-    while True:
+    for _ in range(10):
         example = examples[randint(0, len(examples) - 1)]
         example1 = example.text.split('\xa0')[0].strip().replace('\n', ' ')
         example2 = example.text.split('\xa0')[-1].strip().replace('\n', ' ')
@@ -98,5 +102,8 @@ def get_word_info(word: str) -> dict | str:
 
 if __name__ == '__main__':
     # print(get_word_info('schreiben'))
+    # print(get_word_info('weiss'))
     # print(get_word_info('es'))
-    print(get_word_info('tisch'))
+    # print(get_word_info('tisch'))
+    print(get_word_info('regal'))
+    # print(get_word_info('jogurt'))

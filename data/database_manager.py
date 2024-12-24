@@ -1,6 +1,5 @@
 import os
 import datetime
-from typing import Any
 
 from dotenv import load_dotenv
 from sqlalchemy import URL, create_engine, exc, text
@@ -173,8 +172,6 @@ class DataManager:
                       topic_description: str | None = None,
                       translation: str | None = None) -> Word | str:
         db_word = self.add_new_word(word)
-        # if isinstance(db_word, str):
-        #     return db_word
         user_word = UsersWords(
             word_id=db_word.id,
             user_id=user_id,
