@@ -55,9 +55,8 @@ class Topic(Base):
 
     id = Column(Integer, Sequence('topic_id_seq'), primary_key=True)
     name = Column(String, unique=True)
-    description = Column(String)
 
-    users_words = relationship("UsersWords", cascade="all, delete", back_populates="topic")
+    users_words = relationship("UsersWords", back_populates="topic")
     users_words_topics = relationship("UsersWordsTopics", cascade="all, delete", back_populates="topic")
 
     def __str__(self):
@@ -107,8 +106,6 @@ class UsersWords(Base):
     id = Column(Integer, Sequence('users_word_id_seq'), primary_key=True)
     word_id = Column(Integer, ForeignKey('words.id', ondelete='CASCADE'))
     user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'))
-    custom_translation = Column(String, default=None)
-    example = Column(Integer, ForeignKey('words_examples.id', ondelete='SET NULL'))
     topic_id = Column(Integer, ForeignKey('topics.id', ondelete='CASCADE'))
     fails = Column(Integer, default=0)
     success = Column(Integer, default=0)
@@ -119,14 +116,46 @@ class UsersWords(Base):
     topic = relationship("Topic", back_populates="users_words")
     users_words_topics = relationship("UsersWordsTopics", cascade="all, delete-orphan", back_populates="user_words")
     word_example = relationship("WordExample", cascade="all, delete", back_populates="users_words")
+    custom_translation = relationship("UsersWordsTranslations", back_populates="user_word")
+    example = relationship("UsersWordsExamples", back_populates="user_word")
 
     def __str__(self):
-        return (f'{self.id}. word_id={self.word_id} '
+        return (f'{self.id}. user={self.user.username}, word={self.word.word}: '
                 f'(fails={self.fails}, success={self.success}, last_shown={self.last_shown}')
 
     def __repr__(self):
-        return (f'{self.id}. word_id={self.word_id} '
+        return (f'{self.id}. user={self.user.username}, word={self.word.word}: '
                 f'(fails={self.fails}, success={self.success}, last_shown={self.last_shown}')
+
+
+class UsersWordsTranslations(Base):
+    __tablename__ = 'users_words_translations'
+
+    id = Column(Integer, Sequence('users_words_translations_id_seq'), primary_key=True)
+    user_word_id = Column(Integer, ForeignKey('users_words.id', ondelete='CASCADE'))
+    translation = Column(String)
+
+    user_word = relationship("UsersWords", back_populates="custom_translation")
+
+    def __str__(self):
+        return f'{self.id}. user={self.user_word.user.username}, word={self.user_word.word.word} - {self.translation}'
+
+    def __repr__(self):
+        return f'{self.id}. user={self.user_word.user.username}, word={self.user_word.word.word} - {self.translation}'
+
+
+class UsersWordsExamples(Base):
+    __tablename__ = 'users_words_examples'
+
+    id = Column(Integer, Sequence('users_words_examples_id_seq'), primary_key=True)
+    users_words_id = Column(Integer, ForeignKey('users_words.id', ondelete='CASCADE'))
+    example = Column(String, nullable=False)
+    translation = Column(String)
+
+    user_word = relationship("UsersWords", back_populates="example")
+
+    def __str__(self):
+        return f'{id}. word={self.user_word.word.word}: {self.example} ({self.translation})'
 
 
 class UsersWordsTopics(Base):

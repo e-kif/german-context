@@ -5,7 +5,7 @@ from random import randint
 
 def get_soup_for_word(word: str) -> BeautifulSoup:
     base_url = 'https://www.woerter.net/?w='
-    response = requests.get(base_url + word)
+    response = requests.get(base_url + word.replace(' ', '+'))
     if response.status_code == 200:
         soup = BeautifulSoup(response.text, 'html.parser')
         return soup
@@ -28,12 +28,13 @@ def get_word_from_soup(soup: BeautifulSoup) -> tuple[str, BeautifulSoup | None]:
             the_word = parts_new[0]
             article = ", ".join([art.strip() for art in parts_new if art.strip()[0] == art.strip()[0].lower()])
             return f'{article} {the_word}', soup
-            # return f'{parts[1]} {parts[0].replace(",", "")}', soup
         return word.text.strip(), soup
     url_object = soup.find('a', attrs={'class': 'rKnpf rNoSelect rKnUnt rKnObn'})
     if not url_object:
         return soup.find('i').text.strip(), None
     new_url = url_object.attrs['href']
+    if 'http' not in new_url:
+        new_url = 'https://woerter.net' + new_url
     soup = get_soup_from_url(new_url)
     return soup.find('div', attrs={'class': 'rCntr rClear'}).text.strip(), soup
 
@@ -104,6 +105,8 @@ if __name__ == '__main__':
     # print(get_word_info('schreiben'))
     # print(get_word_info('weiss'))
     # print(get_word_info('es'))
+    print(get_word_info('erschrecken'))
     # print(get_word_info('tisch'))
-    print(get_word_info('regal'))
+    # print(get_word_info('regal'))
+    # print(get_word_info('das fahren'))
     # print(get_word_info('jogurt'))
