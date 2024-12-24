@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from sqlalchemy import URL, create_engine, exc, text
 from sqlalchemy.orm import sessionmaker
 
-from data.models import Base, User, Word, UsersWords, UsersWordsTopics, Topic, WordType, WordExample
+from data.models import *
 
 
 class DataManager:
@@ -127,10 +127,7 @@ class DataManager:
         try:
             db_topic = self.session.query(Topic).filter_by(name=topic).one()
         except exc.NoResultFound:
-            db_topic = Topic(
-                name=topic,
-                description=description
-            )
+            db_topic = Topic(name=topic)
             self.session.add(db_topic)
             self.session.commit()
             self.session.refresh(db_topic)
@@ -153,45 +150,43 @@ class DataManager:
         except exc.NoResultFound:
             return f'No word "{word}" found.'
 
-    def get_user_word_by_id(self, user_word_id: int) -> UsersWords | str:
+    def get_user_word_by_id(self, user_word_id: int) -> UserWord | str:
         try:
-            db_user_word = self.session.query(UsersWords).filter_by(id=user_word_id).one()
+            db_user_word = self.session.query(UserWord).filter_by(id=user_word_id).one()
         except exc.NoResultFound:
             db_user_word = f'User word with id={user_word_id} was not found.'
         return db_user_word
 
-    def get_user_words(self, user_id: int) -> list[type[UsersWords]]:
-        db_users_words = self.session.query(UsersWords).filter_by(user_id=user_id).all()
+    def get_user_words(self, user_id: int) -> list[type[UserWord]]:
+        db_users_words = self.session.query(UserWord).filter_by(user_id=user_id).all()
         return db_users_words
 
     def add_user_word(self,
                       user_id: int,
                       word: dict,
-                      example: list | None = None,
+                      example: str | None = None,
+                      example_translation: str | None = None,
                       topic: str | None = None,
-                      topic_description: str | None = None,
                       translation: str | None = None) -> Word | str:
         db_word = self.add_new_word(word)
-        user_word = UsersWords(
+        user_word = UserWord(
             word_id=db_word.id,
             user_id=user_id,
             last_shown=datetime.datetime(1, 1, 1)
         )
-        if not example and word.get('example'):
-            db_example = self.add_word_example(db_word.id, word['example'][0], word['example'][1])
-            user_word.example = db_example.id
-        elif example:
-            db_example = self.add_word_example(db_word.id, example[0], example[1])
-            user_word.example = db_example.id
         if not topic:
             topic = 'Default'
         db_topic = self.add_topic(topic)
         user_word.topic_id = db_topic.id
-        if translation:
-            user_word.custom_translation = translation
         self.session.add(user_word)
         self.session.commit()
         self.session.refresh(user_word)
+        if not example and word.get('example'):
+            self.add_word_example(db_word.id, word['example'][0], word['example'][1])
+        elif example:
+            self.add_user_word_example(user_word.id, example, example_translation)
+        if translation:
+            self.add_user_word_translation(user_word.id, translation)
         return user_word
 
     def add_word_example(self, word_id: int, example: str, translation: str) -> WordExample:
@@ -208,17 +203,38 @@ class DataManager:
             self.session.refresh(db_example)
         return db_example
 
+    def add_user_word_example(self, user_word_id: int, example: str, translation: str | None) -> UserWordExample:
+        user_word_example = UserWordExample(
+            user_word_id=user_word_id,
+            example=example,
+            translation=translation
+        )
+        self.session.add(user_word_example)
+        self.session.commit()
+        self.session.refresh(user_word_example)
+        return user_word_example
+
+    def add_user_word_translation(self, user_word_id: int, translation: str) -> UserWordTranslation:
+        user_word_translation = UserWordTranslation(
+            user_word_id=user_word_id,
+            translation=translation
+        )
+        self.session.add(user_word_translation)
+        self.session.commit()
+        self.session.refresh(user_word_translation)
+        return user_word_translation
+
     def user_has_word(self, user_id: int, word: str):
         db_word = self.get_word_by_word(word)
         if isinstance(db_word, str):
             return False
         try:
-            self.session.query(UsersWords).filter_by(user_id=user_id, word_id=db_word.id).one()
+            self.session.query(UserWord).filter_by(user_id=user_id, word_id=db_word.id).one()
             return True
         except exc.NoResultFound:
             return False
 
-    def get_user_word_by_word(self, user_id, word: str) -> UsersWords:
+    def get_user_word_by_word(self, user_id, word: str) -> UserWord:
         pass
 
     def add_new_word(self, word: dict) -> Word:
@@ -238,9 +254,9 @@ class DataManager:
         self.session.refresh(new_word)
         return new_word
 
-    def remove_user_word(self, user_word_id) -> UsersWords | str:
+    def remove_user_word(self, user_word_id) -> UserWord | str:
         try:
-            db_user_word = self.session.query(UsersWords).filter_by(id=user_word_id).one()
+            db_user_word = self.session.query(UserWord).filter_by(id=user_word_id).one()
             self.session.delete(db_user_word)
             self.session.commit()
         except exc.NoResultFound:
@@ -263,5 +279,3 @@ db_manager = DataManager(url_object)
 if __name__ == '__main__':
     # print(db_manager.get_user_words(1))
     print(db_manager.user_has_word(1, 'radiergumi'))
-
-

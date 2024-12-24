@@ -137,7 +137,9 @@ async def add_user_word(
             translation=word.translation,
             level=word.level,
             word_type=word.word_type,
-            topic=word.topic
+            topic=word.topic,
+            example=word.example,
+            example_translation=word.example_translation
         )
     the_word = parsed_word.get('word', word.word)
     if db_manager.user_has_word(current_user.id, the_word):
@@ -146,6 +148,7 @@ async def add_user_word(
     db_user_word = db_manager.add_user_word(user_id=current_user.id,
                                             word=parsed_word,
                                             example=word.example,
+                                            example_translation=word.example_translation,
                                             topic=word.topic,
                                             translation=word.translation)
     return serialization.word_out_from_user_word(db_user_word)

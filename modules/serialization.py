@@ -3,7 +3,7 @@ from data.models import *
 from data.schemas import *
 
 
-def word_out_from_user_word(user_word: UsersWords) -> WordOut:
+def word_out_from_user_word(user_word: UserWord) -> WordOut:
     word_out = WordOut(
         id=user_word.id,
         word=user_word.word.word,
@@ -12,13 +12,17 @@ def word_out_from_user_word(user_word: UsersWords) -> WordOut:
         level=user_word.word.level,
         topic=user_word.topic.name
     )
+    if user_word.word.example:
+        word_out.example = user_word.word.example.example
+        word_out.example_translation = user_word.word.example.translation
     if user_word.custom_translation:
-        word_out.english = user_word.custom_translation
-    if user_word.word_example:
-        word_out.example = [user_word.word_example.example, user_word.word_example.translation]
+        word_out.english = user_word.custom_translation.translation
+    if user_word.example:
+        word_out.example = user_word.example.example
+        word_out.example_translation = user_word.example.translation
     return word_out
 
 
 if __name__ == '__main__':
-    word = db_manager.get_user_words(37)[1]
+    word = db_manager.get_user_words(1)[0]
     print(word_out_from_user_word(word))
