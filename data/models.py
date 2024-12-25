@@ -113,7 +113,6 @@ class UserWord(Base):
     user = relationship("User", back_populates="users_words")
     topic = relationship("Topic", back_populates="users_words")
     users_words_topics = relationship("UserWordTopic", cascade="all, delete-orphan", back_populates="user_words")
-    # word_example = relationship("WordExample", cascade="all, delete", back_populates="users_words")
     custom_translation = relationship("UserWordTranslation", back_populates="user_word")
     example = relationship("UserWordExample", back_populates="user_word")
 

@@ -60,7 +60,6 @@ class WordPatch(WordIn):
 
 class TopicIn(BaseModel):
     name: str
-    description: str | None = None
 
 
 class TopicOut(TopicIn):

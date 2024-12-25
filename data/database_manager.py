@@ -123,7 +123,7 @@ class DataManager:
             self.session.refresh(db_example)
         return db_example.id
 
-    def add_topic(self, topic: str, description: str | None = None) -> Topic:
+    def add_topic(self, topic: str) -> Topic:
         try:
             db_topic = self.session.query(Topic).filter_by(name=topic).one()
         except exc.NoResultFound:

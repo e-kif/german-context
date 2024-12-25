@@ -188,3 +188,23 @@ async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
     # todo check translation update (users_words.custom_translation)
     # todo implement db update
     return updated_user_word
+
+# todo user word put route
+# todo get single word route
+# todo swagger grouping
+# todo secret key
+# todo refresh token
+# todo user roles
+# todo topics endpoints
+# todo show cards logic
+# todo words pagination
+# todo pep8
+# todo conjugations, declensions (nouns, pronouns, adjectives, articles, verbs)
+
+# mvp
+# todo deployment (render)
+
+# v2
+# todo unit testing
+# todo security and validation (pydantic, bleach)
+# todo react frontend
