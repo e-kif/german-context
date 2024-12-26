@@ -13,7 +13,6 @@ async def home():
 
 
 # todo user word put route
-# todo get single word route
 # todo refresh token
 # todo user roles
 # todo topics endpoints

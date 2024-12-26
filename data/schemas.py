@@ -34,7 +34,7 @@ class WordBase(BaseModel):
 
 
 class WordIn(WordBase):
-    translation: str | None = None
+    english: str | None = None
     topic: str | None = None
     example: str | None = None
     example_translation: str | None = None

@@ -13,7 +13,7 @@ words = APIRouter(tags=['words'])
 
 @words.get("/users/me/words/")
 async def read_own_words(
-        current_user: Annotated[UserOut, Depends(get_current_active_user)],
+        current_user: Annotated[UserOut, Depends(get_current_active_user)]
 ) -> list[WordOut]:
     db_users_words = db_manager.get_user_words(current_user.id)
     users_words_out = []
@@ -22,19 +22,34 @@ async def read_own_words(
     return users_words_out
 
 
+@words.get("/users/me/words/{user_word_id}")
+async def get_own_word(
+        current_user: Annotated[UserOut, Depends(get_current_active_user)],
+        user_word_id: Annotated[int, Path(title='UserWord id', ge=1)]
+) -> WordOut:
+    db_word = db_manager.get_user_word_by_id(user_word_id)
+    if isinstance(db_word, str):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f'No user word with id={user_word_id} was found.')
+    if db_word.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f'User "{current_user.username}" is allowed to see only his/her own words.')
+    return serialization.word_out_from_user_word(db_word)
+
+
 @words.post("/users/me/words")
 async def add_user_word(
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
         word: WordIn
 ) -> WordOut:
     parsed_word = get_word_info(word.word)
-    if isinstance(parsed_word, str) and not all([word.translation, word.level, word.word_type]):
+    if isinstance(parsed_word, str) and not all([word.english, word.level, word.word_type]):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail=parsed_word + " Provide following values: 'translation', 'level', 'word_type'.")
     elif isinstance(parsed_word, str):
         parsed_word = dict(
             word=word.word,
-            translation=word.translation,
+            translation=word.english,
             level=word.level,
             word_type=word.word_type,
             topic=word.topic,
@@ -50,7 +65,7 @@ async def add_user_word(
                                             example=word.example,
                                             example_translation=word.example_translation,
                                             topic=word.topic,
-                                            translation=word.translation)
+                                            translation=word.english)
     return serialization.word_out_from_user_word(db_user_word)
 
 
@@ -84,7 +99,17 @@ async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
     stored_word_model = WordOut(**serialization.word_out_from_user_word(db_user_word).__dict__)
     update_data = word.model_dump(exclude_unset=True)
     updated_user_word = stored_word_model.model_copy(update=update_data)
-    print(updated_user_word)
-    # todo check translation update (users_words.custom_translation)
-    # todo implement db update
-    return updated_user_word
+    updated_db_user_word = db_manager.updated_user_word(
+        user_word_id=user_word_id,
+        word=updated_user_word.word,
+        word_type=updated_user_word.word_type,
+        english=updated_user_word.english,
+        level=updated_user_word.level,
+        topc=updated_user_word.topic,
+        example=updated_user_word.example,
+        example_translation=updated_user_word.example_translation
+    )
+    if isinstance(updated_db_user_word, str):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=db_user_word)
+    return updated_db_user_word

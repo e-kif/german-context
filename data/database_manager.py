@@ -234,14 +234,36 @@ class DataManager:
         except exc.NoResultFound:
             return False
 
-    def get_user_word_by_word(self, user_id, word: str) -> UserWord:
+    def get_user_word_by_word(self, user_id: int, word: str) -> UserWord:
+        pass
+
+    def update_user_word(self,
+                         user_word_id: int,
+                         word: str = None,
+                         word_type: str = None,
+                         english: str = None,
+                         level: str = None,
+                         topic: str = None,
+                         example: str = None,
+                         example_translation: str = None):
+        # parsed or user_defined
+        db_word = self.get_user_word_by_id(user_word_id)
+        if isinstance(db_word, str):
+            return db_word
+        if db_word.non_parsed_word:
+            db_word.word.word = word
+            db_word.word.english = english
+            db_word.word.level = level
+            db_word.word.word_type = self.add_word_type(word_type).id
+        db_word.topic_id = self.add_topic(topic).id
+
+        # if parsed:
         pass
 
     def add_new_word(self, word: dict) -> Word:
         db_word = self.get_word_by_word(word['word'])
-        if isinstance(db_word, Word):
+        if isinstance(db_word, Word) and db_word.word_type == word.get('word_type'):
             return db_word
-
         word_type = self.add_word_type(word['word_type'])
         new_word = Word(
             word=word['word'],
@@ -266,12 +288,12 @@ class DataManager:
 
 load_dotenv()
 url_object = URL.create(
-    drivername='postgresql+psycopg2',
-    username=os.getenv('pg_username'),
-    password=os.getenv('pg_password'),
-    host=os.getenv('pg_host'),
-    port=os.getenv('pg_port'),
-    database=os.getenv('pg_database')
+    drivername=os.getenv('db_drivername'),
+    username=os.getenv('db_username'),
+    password=os.getenv('db_password'),
+    host=os.getenv('db_host'),
+    port=os.getenv('db_port'),
+    database=os.getenv('db_database')
 )
 
 db_manager = DataManager(url_object)
