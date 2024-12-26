@@ -1,19 +1,22 @@
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
-
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from passlib.context import CryptContext
 from pydantic import BaseModel
+from dotenv import load_dotenv
+import os
 
 
 from data.database_manager import db_manager
 from data.schemas import UserIn, UserOut
 
-SECRET_KEY = "195fe54ddc316ae85d2beeae5cb1b4a5c8d8c05b7c4aaf1307989a84ffa8028d"
-ALGORITHM = "HS256"
+
+load_dotenv()
+SECRET_KEY = os.getenv('OLD_SECRET_KEY')
+ALGORITHM = os.getenv('OLD_ALGORITHM')
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
