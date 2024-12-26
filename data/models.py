@@ -21,6 +21,7 @@ class User(Base):
     level = Column(String, default='A1')
 
     users_words = relationship("UserWord", back_populates="user", cascade="all, delete-orphan")
+    non_parsed_word = relationship("NonParsedWord", back_populates="user")
 
     def __str__(self):
         return f'{self.id}. {self.username} ({self.email})'
@@ -41,6 +42,7 @@ class Word(Base):
     word_type = relationship("WordType", back_populates="words")
     users_word = relationship("UserWord", back_populates="word")
     example = relationship("WordExample", back_populates="word", uselist=False)
+    non_parsed_word = relationship("NonParsedWord", back_populates="word", uselist=False)
 
     def __str__(self):
         return f'{self.id}. {self.word} ({self.level}) - {self.english}'
@@ -164,3 +166,20 @@ class UserWordTopic(Base):
 
     user_words = relationship("UserWord", back_populates="users_words_topics")
     topic = relationship("Topic", back_populates="users_words_topics")
+
+
+class NonParsedWord(Base):
+    __tablename__ = 'non_parsed_words'
+
+    id = Column(Integer, Sequence('non_parsed_words_id_seq'), primary_key=True)
+    word_id = Column(Integer, ForeignKey('words.id', ondelete='CASCADE'), unique=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'))
+
+    word = relationship("Word", back_populates="non_parsed_word", cascade="all, delete")
+    user = relationship("User", back_populates="non_parsed_word", cascade="all, delete")
+
+    def __str__(self):
+        return f'{id}. word {self.word.word} added by {self.user.username}'
+
+    def __repr__(self):
+        return f'{id}. word {self.word.word} added by {self.user.username}'

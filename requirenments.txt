@@ -7,3 +7,4 @@ os
 pyjwt
 passlib[bcrypt]
 requests
+bs4
