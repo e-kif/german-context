@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, TIMESTAMP, Sequence
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, TIMESTAMP, Sequence, Enum
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.sql import func
 
@@ -18,7 +18,7 @@ class User(Base):
     last_activity = Column(DateTime)
     created_at = Column(TIMESTAMP, server_default=func.now())
     streak = Column(Integer)
-    level = Column(String, default='A1')
+    level = Column(Enum('A1', 'A2', 'B1', 'B2', 'C1', 'C2', name='level'), default='A1')
 
     users_words = relationship("UserWord", back_populates="user", cascade="all, delete-orphan")
     non_parsed_word = relationship("NonParsedWord", back_populates="user")
@@ -27,7 +27,7 @@ class User(Base):
         return f'{self.id}. {self.username} ({self.email})'
 
     def __repr__(self):
-        return f'{self.id}. {self.username} ({self.email})'
+        return self.__str__()
 
 
 class Word(Base):
@@ -48,7 +48,7 @@ class Word(Base):
         return f'{self.id}. {self.word} ({self.level}) - {self.english}'
 
     def __repr__(self):
-        return f'{self.id}. {self.word} ({self.level}) - {self.english}'
+        return self.__str__()
 
 
 class Topic(Base):
@@ -64,7 +64,7 @@ class Topic(Base):
         return f'{self.id}. {self.name}'
 
     def __repr__(self):
-        return f'{self.id}. {self.name}'
+        return self.__str__()
 
 
 class WordType(Base):
@@ -80,7 +80,7 @@ class WordType(Base):
         return f'{self.id}. {self.name}'
 
     def __repr__(self):
-        return f'{self.id}. {self.name}'
+        return self.__str__()
 
 
 class WordExample(Base):
@@ -97,7 +97,7 @@ class WordExample(Base):
         return f'{self.id}. word={self.word.word}: {self.example} - {self.translation}'
 
     def __repr__(self):
-        return f'{self.id}. word_id={self.word.word}: {self.example} - {self.translation}'
+        return self.__str__()
 
 
 class UserWord(Base):
@@ -117,14 +117,14 @@ class UserWord(Base):
     users_words_topics = relationship("UserWordTopic", cascade="all, delete-orphan", back_populates="user_words")
     custom_translation = relationship("UserWordTranslation", back_populates="user_word")
     example = relationship("UserWordExample", back_populates="user_word")
+    user_level = relationship("UserWordLevel", cascade="all, delete", back_populates="user_word")
 
     def __str__(self):
         return (f'{self.id}. user={self.user.username}, word={self.word.word}: '
                 f'(fails={self.fails}, success={self.success}, last_shown={self.last_shown}')
 
     def __repr__(self):
-        return (f'{self.id}. user={self.user.username}, word={self.word.word}: '
-                f'(fails={self.fails}, success={self.success}, last_shown={self.last_shown}')
+        return self.__str__()
 
 
 class UserWordTranslation(Base):
@@ -140,7 +140,7 @@ class UserWordTranslation(Base):
         return f'{self.id}. user={self.user_word.user.username}, word={self.user_word.word.word} - {self.translation}'
 
     def __repr__(self):
-        return f'{self.id}. user={self.user_word.user.username}, word={self.user_word.word.word} - {self.translation}'
+        return self.__str__()
 
 
 class UserWordExample(Base):
@@ -154,7 +154,10 @@ class UserWordExample(Base):
     user_word = relationship("UserWord", back_populates="example")
 
     def __str__(self):
-        return f'{id}. word={self.user_word.word.word}: {self.example} ({self.translation})'
+        return f'{self.id}. word={self.user_word.word.word}: {self.example} ({self.translation})'
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class UserWordTopic(Base):
@@ -179,7 +182,24 @@ class NonParsedWord(Base):
     user = relationship("User", back_populates="non_parsed_word", cascade="all, delete")
 
     def __str__(self):
-        return f'{id}. word {self.word.word} added by {self.user.username}'
+        return f'{self.id}. word {self.word.word} added by {self.user.username}'
 
     def __repr__(self):
-        return f'{id}. word {self.word.word} added by {self.user.username}'
+        return self.__str__()
+
+
+class UserWordLevel(Base):
+    __tablename__ = 'users_words_levels'
+
+    id = Column(Integer, Sequence('users_words_levels_id_seq'), primary_key=True)
+    user_word_id = Column(Integer, ForeignKey('users_words.id', ondelete='CASCADE'), unique=True)
+    level = Column(Enum('A1', 'A2', 'B1', 'B2', 'C1', 'C2', name='level'))
+
+    user_word = relationship("UsersWord", back_populates="user_level")
+
+    def __str__(self):
+        return (f'{self.id}. user={self.user_word.user.username}, word={self.user_word.word.word}, '
+                f'custom_level={self.level}')
+
+    def __repr__(self):
+        return self.__str__()

@@ -246,7 +246,6 @@ class DataManager:
                          topic: str = None,
                          example: str = None,
                          example_translation: str = None):
-        # parsed or user_defined
         db_word = self.get_user_word_by_id(user_word_id)
         if isinstance(db_word, str):
             return db_word
@@ -256,9 +255,11 @@ class DataManager:
             db_word.word.level = level
             db_word.word.word_type = self.add_word_type(word_type).id
         db_word.topic_id = self.add_topic(topic).id
-
-        # if parsed:
-        pass
+        db_word.example.example = example
+        db_word.example.translation = example_translation
+        self.session.commit()
+        self.session.refresh(db_word)
+        return db_word
 
     def add_new_word(self, word: dict) -> Word:
         db_word = self.get_word_by_word(word['word'])
