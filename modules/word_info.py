@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 from random import randint
+from typing import Literal
 
 
 def get_soup_for_word(word: str) -> BeautifulSoup:
@@ -11,6 +12,53 @@ def get_soup_for_word(word: str) -> BeautifulSoup:
         return soup
 
 
+def get_wordlist_from_word_search(
+        word: str,
+        word_type: Literal[
+            'Noun', 'Verb', 'Adjective',
+            'Pronoun', 'Preposition', 'Conjunction',
+            'Adverb', 'Article', 'Particle'
+        ] | None = None
+) -> list[dict] | dict | str:
+    base_url = 'https://woerter.net'
+    search_url = base_url + '/search/?w='
+    response = requests.get(search_url + word.replace(' ', '+'))
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.text, 'html.parser')
+        word_cards = soup.find_all('div', attrs={'class': 'bTrf rClear'})
+        words = []
+        for current_word in word_cards:
+            the_word = current_word.find('a').parent.find_all('span')[0].text
+            info = current_word.find('p', attrs={'class': 'rInf rKln r1Zeile rU3px rO0px'})
+            if not info.find('span'):
+                words.append(dict(
+                    word=the_word,
+                    word_type=None,
+                    level=None,
+                    href=base_url + current_word.find('a')['href']
+                ))
+                continue
+            level = None
+            if 'bZrt' in str(info):
+                level = info.find('span', attrs={'class': 'bZrt'}).text.strip()
+                current_word_type = info.find_all('span')[1].text
+            else:
+                current_word_type = info.find_all('span')[0].text
+            href = base_url + current_word.find('a')['href']
+            words.append(dict(
+                word=the_word,
+                word_type=current_word_type,
+                level=level,
+                href=href
+            ))
+        if word_type:
+            try:
+                words = [word for word in words if word['word_type'].lower() == word_type.lower()][0]
+            except IndexError:
+                return f'Word "{word}" ({word_type}) was not found.'
+        return words
+
+
 def get_soup_from_url(url: str) -> BeautifulSoup:
     response = requests.get(url)
     if response.status_code == 200:
@@ -18,25 +66,32 @@ def get_soup_from_url(url: str) -> BeautifulSoup:
         return soup
 
 
-def get_word_from_soup(soup: BeautifulSoup) -> tuple[str, BeautifulSoup | None]:
+def parse_word(soup: BeautifulSoup):
     word = soup.find('div', attrs={'class': 'rCntr rClear'})
     if word:
         if '\n' in word.text.strip():
             parts_new = word.text.replace('\n', '').split(',')
             if len(parts_new) == 2:
-                return ' '.join(parts_new[::-1]), soup
+                return ' '.join(parts_new[::-1])
             the_word = parts_new[0]
             article = ", ".join([art.strip() for art in parts_new if art.strip()[0] == art.strip()[0].lower()])
-            return f'{article} {the_word}', soup
-        return word.text.strip(), soup
-    url_object = soup.find('a', attrs={'class': 'rKnpf rNoSelect rKnUnt rKnObn'})
-    if not url_object:
-        return soup.find('i').text.strip(), None
-    new_url = url_object.attrs['href']
-    if 'http' not in new_url:
-        new_url = 'https://woerter.net' + new_url
-    soup = get_soup_from_url(new_url)
-    return soup.find('div', attrs={'class': 'rCntr rClear'}).text.strip(), soup
+            return f'{article} {the_word}'
+        return word.text.strip()
+
+
+def get_word_from_soup(soup: BeautifulSoup) -> tuple[str, BeautifulSoup | None]:
+    word = parse_word(soup)
+    if not word:
+        url_object = soup.find('a', attrs={'class': 'rKnpf rNoSelect rKnUnt rKnObn'})
+        if not url_object:
+            return soup.find('i').text.strip(), None
+        new_url = url_object.attrs['href']
+        if 'http' not in new_url:
+            new_url = 'https://woerter.net' + new_url
+        soup = get_soup_from_url(new_url)
+        word = parse_word(soup)
+        return word, soup
+    return word, soup
 
 
 def get_word_level_and_type(soup: BeautifulSoup) -> tuple[str, str] | tuple[None, None]:
@@ -101,12 +156,39 @@ def get_word_info(word: str) -> dict | str:
     return word_info
 
 
+def get_word_info_from_search(
+        word: str,
+        word_type: Literal[
+            'Noun', 'Verb', 'Adjective',
+            'Pronoun', 'Preposition', 'Conjunction',
+            'Adverb', 'Article', 'Particle'
+        ] | None = None
+) -> dict | str | list:
+    found_words = get_wordlist_from_word_search(word, word_type)
+    if isinstance(found_words, str | list):
+        return found_words
+    soup = get_soup_from_url(found_words['href'])
+    word_info = {'word': get_word_from_soup(soup)[0]}
+    level, word_type_parsed = get_word_level_and_type(soup)
+    translation = get_word_translation(soup)
+    example = get_word_example(soup)
+    if level and word_type:
+        word_info.update({'level': level, 'word_type': word_type_parsed})
+    if translation:
+        word_info.update({'translation': translation})
+    if example:
+        word_info.update({'example': example})
+    return word_info
+
+
 if __name__ == '__main__':
     # print(get_word_info('schreiben'))
     # print(get_word_info('weiss'))
     # print(get_word_info('es'))
-    print(get_word_info('erschrecken'))
+    # print(get_word_info('erschrecken'))
     # print(get_word_info('tisch'))
     # print(get_word_info('regal'))
     # print(get_word_info('das fahren'))
     # print(get_word_info('jogurt'))
+    # print(get_wordlist_from_word_search('die'))
+    print(get_word_info('radiergu'))
