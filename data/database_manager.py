@@ -143,9 +143,10 @@ class DataManager:
             db_word = f'Word with id={word_id} was not found.'
         return db_word
 
-    def get_word_by_word(self, word: str) -> type(Word) | str:
+    def get_word_by_word(self, word: str, word_type: str) -> type(Word) | str:
         try:
-            db_word = self.session.query(Word).filter_by(word=word).one()
+            db_word = (self.session.query(Word).join(WordType)
+                       .filter(Word.word == word, WordType.name == word_type).one())
             return db_word
         except exc.NoResultFound:
             return f'No word "{word}" found.'
@@ -224,8 +225,8 @@ class DataManager:
         self.session.refresh(user_word_translation)
         return user_word_translation
 
-    def user_has_word(self, user_id: int, word: str):
-        db_word = self.get_word_by_word(word)
+    def user_has_word(self, user_id: int, word: str, word_type: str):
+        db_word = self.get_word_by_word(word, word_type)
         if isinstance(db_word, str):
             return False
         try:
@@ -262,8 +263,8 @@ class DataManager:
         return db_word
 
     def add_new_word(self, word: dict) -> Word:
-        db_word = self.get_word_by_word(word['word'])
-        if isinstance(db_word, Word) and db_word.word_type == word.get('word_type'):
+        db_word = self.get_word_by_word(word['word'], word['word_type'])
+        if isinstance(db_word, Word) and db_word.word_type.name == word.get('word_type'):
             return db_word
         word_type = self.add_word_type(word['word_type'])
         new_word = Word(
@@ -276,6 +277,16 @@ class DataManager:
         self.session.commit()
         self.session.refresh(new_word)
         return new_word
+
+    def add_non_parsed_word_record(self, user_id: int, word_id: int):
+        non_parsed_word_record = NonParsedWord(
+            user_id=user_id,
+            word_id=word_id
+        )
+        self.session.add(non_parsed_word_record)
+        self.session.commit()
+        self.session.refresh(non_parsed_word_record)
+        return non_parsed_word_record
 
     def remove_user_word(self, user_word_id) -> UserWord | str:
         try:
