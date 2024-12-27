@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, TIMESTAMP, Sequence, Enum
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, TIMESTAMP, Sequence, Enum, UniqueConstraint
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.sql import func
 
@@ -34,10 +34,11 @@ class Word(Base):
     __tablename__ = 'words'
 
     id = Column(Integer, Sequence('word_id_seq'), primary_key=True)
-    word = Column(String, unique=True, nullable=False)
+    word = Column(String, nullable=False)
     word_type_id = Column(Integer, ForeignKey('word_types.id', ondelete='CASCADE'), nullable=False)
     english = Column(String, nullable=False)
     level = Column(String, nullable=False)
+    __table_args__ = UniqueConstraint('word', 'word_type_id', name='_unique_word'),
 
     word_type = relationship("WordType", back_populates="words")
     users_word = relationship("UserWord", back_populates="word")
@@ -72,7 +73,7 @@ class WordType(Base):
 
     id = Column(Integer, Sequence('word_type_id_seq'), primary_key=True)
     name = Column(String, unique=True, nullable=False)
-    questions = Column(String)
+    # questions = Column(String)
 
     words = relationship("Word", cascade="all, delete-orphan", back_populates="word_type")
 
@@ -195,7 +196,7 @@ class UserWordLevel(Base):
     user_word_id = Column(Integer, ForeignKey('users_words.id', ondelete='CASCADE'), unique=True)
     level = Column(Enum('A1', 'A2', 'B1', 'B2', 'C1', 'C2', name='level'))
 
-    user_word = relationship("UsersWord", back_populates="user_level")
+    user_word = relationship("UserWord", back_populates="user_level")
 
     def __str__(self):
         return (f'{self.id}. user={self.user_word.user.username}, word={self.user_word.word.word}, '
