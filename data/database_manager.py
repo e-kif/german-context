@@ -6,6 +6,7 @@ from sqlalchemy import URL, create_engine, exc, text
 from sqlalchemy.orm import sessionmaker
 
 from data.models import *
+from modules.word_info import get_word_info_from_search
 
 
 class DataManager:
@@ -20,7 +21,7 @@ class DataManager:
 
     def get_user_by_id(self, user_id: int):
         try:
-            result = self.session.query(User).filter(User.id == user_id).one()
+            result = self.session.query(User).filter_by(id=user_id).one()
         except exc.NoResultFound:
             result = f'User with id={user_id} was not found.'
         return result
@@ -206,7 +207,7 @@ class DataManager:
 
     def add_user_word_example(self, user_word_id: int, example: str, translation: str | None) -> UserWordExample:
         user_word_example = UserWordExample(
-            user_word_id=user_word_id,
+            users_words_id=user_word_id,
             example=example,
             translation=translation
         )
@@ -215,7 +216,15 @@ class DataManager:
         self.session.refresh(user_word_example)
         return user_word_example
 
-    def add_user_word_translation(self, user_word_id: int, translation: str) -> UserWordTranslation:
+    def add_user_word_translation(self, user_word_id: int, translation: str) -> UserWordTranslation | str:
+        try:
+            db_user_word = self.session.query(UserWord).filter_by(id=user_word_id).one()
+        except exc.NoResultFound:
+            return f'User word with id={user_word_id} was not found'
+        if db_user_word.custom_translation:
+            db_user_word.custom_translation.translation = translation
+            self.session.commit()
+            return db_user_word.custom_translation
         user_word_translation = UserWordTranslation(
             user_word_id=user_word_id,
             translation=translation
@@ -238,6 +247,28 @@ class DataManager:
     def get_user_word_by_word(self, user_id: int, word: str) -> UserWord:
         pass
 
+    def user_word_has_translation(self, user_word_id: int) -> bool:
+        try:
+            db_user_word = self.session.query(UserWord).filter_by(id=user_word_id).one()
+        except exc.NoResultFound:
+            return False
+        return bool(db_user_word.custom_translation)
+
+    def add_user_word_level(self, user_word_id: int, level: str) -> UserWordLevel | str:
+        db_user_word = self.get_user_word_by_id(user_word_id)
+        if isinstance(db_user_word, str):
+            return f'User word with id={user_word_id} was not found.'
+        if db_user_word.user_level:
+            db_user_word.user_level.level = level
+        else:
+            user_level = UserWordLevel(
+                user_word_id=user_word_id,
+                level=level
+            )
+            self.session.add(user_level)
+        self.session.commit()
+        return db_user_word.user_level
+
     def update_user_word(self,
                          user_word_id: int,
                          word: str = None,
@@ -246,21 +277,54 @@ class DataManager:
                          level: str = None,
                          topic: str = None,
                          example: str = None,
-                         example_translation: str = None):
-        db_word = self.get_user_word_by_id(user_word_id)
-        if isinstance(db_word, str):
-            return db_word
-        if db_word.non_parsed_word:
-            db_word.word.word = word
-            db_word.word.english = english
-            db_word.word.level = level
-            db_word.word.word_type = self.add_word_type(word_type).id
-        db_word.topic_id = self.add_topic(topic).id
-        db_word.example.example = example
-        db_word.example.translation = example_translation
+                         example_translation: str = None) -> UserWord | str:
+        db_user_word = self.get_user_word_by_id(user_word_id)
+        if isinstance(db_user_word, str):
+            return db_user_word
+        if db_user_word.word.non_parsed_word:
+            db_user_word.word.word = word
+            db_user_word.word.english = english
+            db_user_word.word.level = level
+            db_user_word.word.word_type = self.add_word_type(word_type).id
+        elif db_user_word.word.word_type.name != word_type or db_user_word.word.word != word:
+            db_word = self.get_word_by_word(word, word_type)
+            if isinstance(db_word, Word):  # user adds a word that is present in db
+                old_word = self.session.query(Word).filter_by(id=db_user_word.word_id).one()
+                db_user_word.word_id = db_word.id
+                try:
+                    (self.session.query(UserWord).filter_by(word_id=old_word.id)
+                     .filter(UserWord.user_id != db_user_word.user_id).first())
+                except exc.NoResultFound:
+                    self.session.delete(old_word)
+                if english != db_word.english and not db_user_word.custom_translation:
+                    user_translation = UserWordTranslation(
+                        user_word_id=user_word_id,
+                        translation=english
+                    )
+                    self.session.add(user_translation)
+                else:
+                    db_user_word.custom_translation.translation = english
+                if level != db_word.level:
+                    self.add_user_word_level(db_user_word.id, level)
+            else:  # the word is not in db
+                new_word = get_word_info_from_search(word, word_type)  # user adds new word
+                if isinstance(new_word, dict):  # user adds parsed word
+                    db_new_word = self.add_new_word(new_word)
+                    db_user_word.word_id = db_new_word.id
+        else:
+            if level != db_user_word.word.level:
+                self.add_user_word_level(db_user_word.id, level)
+            if english != db_user_word.word.english:
+                self.add_user_word_translation(db_user_word.id, english)
+            if not db_user_word.example:
+                self.add_user_word_example(db_user_word.id, example, example_translation)
+            if example != db_user_word.example.example or example_translation != db_user_word.example.translation:
+                db_user_word.example.example = example
+                db_user_word.example.translation = example_translation
+        db_user_word.topic_id = self.add_topic(topic).id
         self.session.commit()
-        self.session.refresh(db_word)
-        return db_word
+        self.session.refresh(db_user_word)
+        return db_user_word
 
     def add_new_word(self, word: dict) -> Word:
         db_word = self.get_word_by_word(word['word'], word['word_type'])
@@ -312,4 +376,5 @@ db_manager = DataManager(url_object)
 
 if __name__ == '__main__':
     # print(db_manager.get_user_words(1))
-    print(db_manager.user_has_word(1, 'radiergumi'))
+    # print(db_manager.user_has_word(1, 'radiergumi'))
+    db_manager.session.rollback()
