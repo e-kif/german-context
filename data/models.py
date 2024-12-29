@@ -116,8 +116,8 @@ class UserWord(Base):
     user = relationship("User", back_populates="users_words")
     topic = relationship("Topic", back_populates="users_words")
     users_words_topics = relationship("UserWordTopic", cascade="all, delete-orphan", back_populates="user_words")
-    custom_translation = relationship("UserWordTranslation", back_populates="user_word")
-    example = relationship("UserWordExample", back_populates="user_word")
+    custom_translation = relationship("UserWordTranslation", back_populates="user_word", uselist=False)
+    example = relationship("UserWordExample", back_populates="user_word", uselist=False)
     user_level = relationship("UserWordLevel", cascade="all, delete", back_populates="user_word")
 
     def __str__(self):
@@ -152,7 +152,7 @@ class UserWordExample(Base):
     example = Column(String, nullable=False)
     translation = Column(String)
 
-    user_word = relationship("UserWord", back_populates="example")
+    user_word = relationship("UserWord", back_populates="example", uselist=False)
 
     def __str__(self):
         return f'{self.id}. word={self.user_word.word.word}: {self.example} ({self.translation})'
