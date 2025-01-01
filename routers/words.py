@@ -45,7 +45,7 @@ async def add_user_word(
     custom_word = False
     if isinstance(parsed_word, str) and not all([word.english, word.level, word.word_type]):
         searched_words = get_word_info_from_search(word.word)
-        if isinstance(searched_words, list):
+        if isinstance(searched_words, list) and searched_words:
             suggestions = '; '.join([f"{searched_word['word']} ({searched_word['word_type']})"
                                      for searched_word in searched_words])
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,

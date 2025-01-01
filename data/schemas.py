@@ -22,6 +22,11 @@ class UserIn(UserBase):
     password: str
 
 
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+
 class UserPatch(BaseModel):
     username: str | None = None
     email: EmailStr | None = None

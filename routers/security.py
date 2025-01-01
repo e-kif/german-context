@@ -21,6 +21,29 @@ async def login_for_access_token(
         )
     access_token_expires = datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
+        data={"sub": user.username}, expiration_delta=access_token_expires
     )
     return Token(access_token=access_token, token_type="bearer")
+
+
+from fastapi.responses import JSONResponse
+from modules.security import create_access_token, authenticate_user, create_refresh_token, check_cookie
+from data.schemas import UserLogin
+
+
+@security.post("/login")
+async def login_for_access_token(user: UserLogin):
+    if user.username and user.password:
+        db_user = authenticate_user(user.username, user.password)
+        if db_user:
+            token = create_access_token(data={'sub': db_user.username},
+                                        expiration_delta=datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+            refresh_token = create_refresh_token(data={'sub': db_user.username, 'id': db_user.id})
+            response = JSONResponse({'token': token}, status_code=200)
+            response.set_cookie(key='refresh-Token', value=refresh_token)
+            return response
+    return JSONResponse({'msg': 'Invalid Credentials'}, status_code=403)
+
+@security.post("/refresh")
+async def refresh_token(refresh_token: str = Depends(check_cookie)):
+    pass

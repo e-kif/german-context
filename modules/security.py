@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from passlib.context import CryptContext
@@ -9,13 +9,12 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 import os
 
-
 from data.database_manager import db_manager
 from data.schemas import UserIn, UserOut
 
-
 load_dotenv()
 SECRET_KEY = os.getenv('OLD_SECRET_KEY')
+REFRESH_SECRET_KEY = os.getenv('SECRET_KEY')
 ALGORITHM = os.getenv('OLD_ALGORITHM')
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -56,15 +55,42 @@ def authenticate_user(username: str, password: str):
     return user
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
+def create_token(data: dict,
+                 secret_key: str,
+                 expiration_delta: timedelta | int = 15,
+                 algorithm: str = ALGORITHM) -> str:
     to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+    if isinstance(expiration_delta, timedelta):
+        expire = datetime.now(timezone.utc) + expiration_delta
+    elif isinstance(expiration_delta, int):
+        expire = datetime.now(timezone.utc) + timedelta(minutes=expiration_delta)
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    to_encode.update({'exp': expire})
+    encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=algorithm)
     return encoded_jwt
+
+
+def create_access_token(data: dict,
+                        expiration_delta: timedelta | int = 5,
+                        secret_key: str = SECRET_KEY,
+                        algorithm: str = ALGORITHM) -> str:
+    access_token = create_token(data=data,
+                                expiration_delta=expiration_delta,
+                                secret_key=secret_key,
+                                algorithm=algorithm)
+    return access_token
+
+
+def create_refresh_token(data: dict,
+                         secret_key: str = REFRESH_SECRET_KEY,
+                         expiration_delta: timedelta | int = 15,
+                         algorithm: str = ALGORITHM) -> str:
+    refresh_token = create_token(data=data,
+                                 secret_key=secret_key,
+                                 expiration_delta=expiration_delta,
+                                 algorithm=algorithm)
+    return refresh_token
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
@@ -88,11 +114,19 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
 
 
 async def get_current_active_user(
-    current_user: Annotated[UserOut, Depends(get_current_user)],
+        current_user: Annotated[UserOut, Depends(get_current_user)],
 ):
     # if current_user.disabled:
     #     raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
+
+
+async def check_cookie(request: Request) -> str:
+    refresh_token = request.cookies.get('refresh_token')
+    if not refresh_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail='Refresh token cookie not found')
+    return refresh_token
 
 
 if __name__ == '__main__':
