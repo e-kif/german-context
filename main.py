@@ -12,7 +12,6 @@ async def home():
     return {'message': 'Welcome to the German-Context App!'}
 
 
-# todo refresh token
 # todo user roles
 # todo user activation mail
 # todo topics endpoints

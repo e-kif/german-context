@@ -16,7 +16,7 @@ load_dotenv()
 SECRET_KEY = os.getenv('OLD_SECRET_KEY')
 REFRESH_SECRET_KEY = os.getenv('SECRET_KEY')
 ALGORITHM = os.getenv('OLD_ALGORITHM')
-ACCESS_TOKEN_EXPIRE_MINUTES = 1
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 
 class Token(BaseModel):
