@@ -16,11 +16,12 @@ load_dotenv()
 SECRET_KEY = os.getenv('OLD_SECRET_KEY')
 REFRESH_SECRET_KEY = os.getenv('SECRET_KEY')
 ALGORITHM = os.getenv('OLD_ALGORITHM')
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 1
 
 
 class Token(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str
 
 
@@ -68,7 +69,7 @@ def create_token(data: dict,
         expire = datetime.now(timezone.utc) + timedelta(minutes=15)
     to_encode.update({'exp': expire})
     encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=algorithm)
-    return encoded_jwt
+    return encoded_jwt if isinstance(encoded_jwt, str) else encoded_jwt.decode('utf-8')
 
 
 def create_access_token(data: dict,
@@ -93,7 +94,7 @@ def create_refresh_token(data: dict,
     return refresh_token
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserOut:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -128,6 +129,17 @@ async def check_cookie(request: Request) -> str:
                             detail='Refresh token cookie not found')
     return refresh_token
 
+
+async def decode_refresh_token(token: str, key: str, token_type: str) -> str:
+    try:
+        payload = jwt.decode(token, REFRESH_SECRET_KEY, [ALGORITHM])
+        if payload['type'] != token_type:
+            raise jwt.InvalidTokenError('Invalid token type')
+        if datetime.utcnow() > datetime.utcfromtimestamp(payload['exp']):
+            raise jwt.ExpiredSignatureError('Token has expired')
+        return payload[key]
+    except jwt.PyJWTError as e:
+        print(f'Token decoding error: {e}')
 
 if __name__ == '__main__':
     print(authenticate_user('string', 'string'))
