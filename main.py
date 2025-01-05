@@ -22,7 +22,7 @@ async def home():
 # todo conjugations, declensions (nouns, pronouns, adjectives, articles, verbs)
 
 # mvp
-# todo deployment (render)
+# todo deployment (render/vps)
 
 # v2
 # todo unit testing
