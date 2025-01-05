@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Path, HTTPException, status, Depends
-from typing import Annotated, Any
+from fastapi import APIRouter, HTTPException, status, Depends
+from typing import Annotated
 
 from data.schemas import UserIn, UserOut, UserPatch, UserBase
 from data.database_manager import db_manager

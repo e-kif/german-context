@@ -7,9 +7,6 @@ from modules.security import get_current_user, get_password_hash
 
 admins = APIRouter(tags=["admins"])
 
-not_admin_exception = HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                                    detail='')
-
 
 def is_user_admin(user: UserOut) -> bool:
     if not db_manager.check_user_role(user.id, 'Admin'):
