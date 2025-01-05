@@ -58,6 +58,26 @@ class DataManager:
             return error.args[0].split('\n')[1].split(':')[1].strip()
         return new_user
 
+    def add_role(self, role: str):
+        db_role = Role(name=role)
+        try:
+            self.session.add(db_role)
+            self.session.commit()
+            self.session.refresh(db_role)
+        except exc.IntegrityError:
+            self.session.rollback()
+            db_role = self.session.query(Role).filter_by(name=role).one()
+        return db_role
+
+    def assign_user_to_role(self, user_id: int, role: str):
+        db_user = self.get_user_by_id(user_id)
+        if isinstance(db_user, str):
+            return db_user
+        db_role = self.add_role(role)
+        db_user.user_role.role_id = db_role.id
+        self.session.commit()
+        return db_user
+
     def delete_user(self, user_id):
         try:
             delete_user = self.session.query(User).filter_by(id=user_id).one()
@@ -375,6 +395,6 @@ url_object = URL.create(
 db_manager = DataManager(url_object)
 
 if __name__ == '__main__':
-    # print(db_manager.get_user_words(1))
-    # print(db_manager.user_has_word(1, 'radiergumi'))
-    db_manager.session.rollback()
+    # db_manager.session.rollback()
+    print(db_manager.get_users())
+    # pass

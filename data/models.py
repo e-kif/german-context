@@ -22,12 +22,33 @@ class User(Base):
 
     users_words = relationship("UserWord", back_populates="user", cascade="all, delete-orphan")
     non_parsed_word = relationship("NonParsedWord", back_populates="user")
+    user_role = relationship("UserRole", back_populates="user", uselist=False)
 
     def __str__(self):
-        return f'{self.id}. {self.username} ({self.email})'
+        return f'{self.id}. {self.username} ({self.email} - {self.user_role.role.name})'
 
     def __repr__(self):
         return self.__str__()
+
+
+class Role(Base):
+    __tablename__ = 'roles'
+
+    id = Column(Integer, Sequence('roles_id_seq'), primary_key=True)
+    name = Column(String, Enum('Admin', 'Manager', 'User', name='user_roles_enum'), unique=True)
+
+    user_role = relationship("UserRole", back_populates="role")
+
+
+class UserRole(Base):
+    __tablename__ = 'user_roles'
+
+    id = Column(Integer, Sequence('user_roles_id_seq'), primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    role_id = Column(Integer, ForeignKey('roles.id'), nullable=False)
+
+    user = relationship("User", back_populates="user_role")
+    role = relationship("Role", back_populates="user_role")
 
 
 class Word(Base):
