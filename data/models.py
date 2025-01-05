@@ -22,7 +22,7 @@ class User(Base):
 
     users_words = relationship("UserWord", back_populates="user", cascade="all, delete-orphan")
     non_parsed_word = relationship("NonParsedWord", back_populates="user")
-    user_role = relationship("UserRole", back_populates="user", uselist=False)
+    user_role = relationship("UserRole", back_populates="user", uselist=False, cascade="all, delete")
 
     def __str__(self):
         return f'{self.id}. {self.username} ({self.email} - {self.user_role.role.name})'

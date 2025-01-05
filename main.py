@@ -4,6 +4,7 @@ import routers
 app = FastAPI()
 app.include_router(routers.users)
 app.include_router(routers.words)
+app.include_router(routers.admins)
 app.include_router(routers.security)
 
 

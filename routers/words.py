@@ -125,7 +125,7 @@ async def patch_own_word(user_word_id: Annotated[int, Path(ge=1)],
     return serialization.word_out_from_user_word(updated_db_user_word)
 
 
-@words.put("users/me/words/{user_word_id")
+@words.put("users/me/words/{user_word_id}")
 async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
                           current_user: Annotated[UserOut, Depends(get_current_active_user)],
                           word: WordIn) -> WordOut:

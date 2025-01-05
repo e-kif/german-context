@@ -22,6 +22,10 @@ class UserIn(UserBase):
     password: str
 
 
+class UserInRole(UserIn):
+    role: Literal['User', 'Manager', 'Admin'] = 'User'
+
+
 class UserLogin(BaseModel):
     username: str
     password: str

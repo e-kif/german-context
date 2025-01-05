@@ -56,13 +56,10 @@ class DataManager:
             self.session.rollback()
             self.session.execute(text("SELECT SETVAL('user_id_seq', (SELECT COALESCE(MAX(id)) FROM users), true)"))
             return error.args[0].split('\n')[1].split(':')[1].strip()
-        if not self.get_users():
+        if len(self.get_users()) == 1:
             self.assign_user_role(new_user.id, 'Admin')
         else:
             self.assign_user_role(new_user.id, 'User')
-            db_user_role = self.add_role('User')
-            user_role = UserRole(role=db_user_role.id)
-            self.session.add(user_role)
         self.session.commit()
         return new_user
 
@@ -96,6 +93,12 @@ class DataManager:
         self.session.commit()
         self.session.refresh(db_user_role)
         return db_user_role
+
+    def check_user_role(self, user_id: int, role: str):
+        db_user = self.get_user_by_id(user_id)
+        if isinstance(db_user, str):
+            return db_user
+        return db_user.user_role.role.name == role
 
     def delete_user(self, user_id):
         try:
@@ -415,4 +418,5 @@ db_manager = DataManager(url_object)
 
 if __name__ == '__main__':
     # db_manager.session.rollback()
+    # print(db_manager.check_user_role(1, 'User'))
     print(db_manager.get_users())
