@@ -88,8 +88,9 @@ async def remove_user_word(
     if current_user.id != the_word.user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail="User can remove only his words.")
+    serialized_word = serialization.word_out_from_user_word(the_word)
     db_manager.remove_user_word(user_word_id)
-    return serialization.word_out_from_user_word(the_word)
+    return serialized_word
 
 
 @words.patch('/{user_word_id}')

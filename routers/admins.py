@@ -158,8 +158,9 @@ async def remove_user_word(
     if isinstance(the_word, str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=the_word)
+    serialized_word = serialization.word_out_from_user_word(the_word)
     db_manager.remove_user_word(user_word_id)
-    return serialization.word_out_from_user_word(the_word)
+    return serialized_word
 
 
 @admin_user_words.patch('/words/{user_word_id}')
