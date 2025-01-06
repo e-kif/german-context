@@ -1,17 +1,23 @@
 from fastapi import FastAPI
 import routers
 
+from data.schemas import UserOut
+from data.database_manager import db_manager
+
 app = FastAPI()
-app.include_router(routers.users)
-app.include_router(routers.words)
-app.include_router(routers.admins)
-app.include_router(routers.security)
 
 
 @app.get("/")
 async def home():
     return {'message': 'Welcome to the German-Context App!'}
 
+
+app.include_router(routers.users)
+app.include_router(routers.words)
+app.include_router(routers.admin_users)
+app.include_router(routers.admin_user_words)
+app.include_router(routers.admin_words)
+app.include_router(routers.security)
 
 # todo user roles
 # todo user activation mail

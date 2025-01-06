@@ -5,15 +5,15 @@ from data.schemas import UserIn, UserOut, UserPatch, UserBase
 from data.database_manager import db_manager
 from modules.security import get_password_hash, get_current_active_user
 
-users = APIRouter(tags=['users'])
+users = APIRouter(prefix='/users', tags=['users'])
 
 
-@users.get("/users")
+@users.get('')
 async def get_users() -> list[UserOut]:
     return db_manager.get_users()
 
 
-@users.post("/users")
+@users.post('')
 async def add_user(user: UserIn) -> UserBase:
     new_user = db_manager.add_user(
         username=user.username,
@@ -27,7 +27,7 @@ async def add_user(user: UserIn) -> UserBase:
     return new_user
 
 
-@users.put("/user/me", response_model=UserOut)
+@users.put('/me', response_model=UserOut)
 async def update_user(user: UserIn,
                       current_user: Annotated[UserOut, Depends(get_current_active_user)]):
     updated_user = db_manager.update_user(
@@ -43,7 +43,7 @@ async def update_user(user: UserIn,
     return updated_user
 
 
-@users.patch("/user/me", response_model=UserOut)
+@users.patch('/me', response_model=UserOut)
 async def patch_user(user: UserPatch,
                      current_user: Annotated[UserOut, Depends(get_current_active_user)]):
     db_user = db_manager.get_user_by_id(current_user.id)
@@ -57,14 +57,14 @@ async def patch_user(user: UserPatch,
     return db_user_updated
 
 
-@users.get("/users/me/", response_model=UserOut)
+@users.get('/me', response_model=UserOut)
 async def read_users_me(
         current_user: Annotated[UserBase, Depends(get_current_active_user)],
 ):
     return current_user
 
 
-@users.delete("/users/me/")
+@users.delete('/me')
 async def remove_self(current_user: Annotated[UserOut, Depends(get_current_active_user)]) -> UserOut:
     db_user = db_manager.get_user_by_id(current_user.id)
     if isinstance(db_user, str):

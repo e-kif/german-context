@@ -7,21 +7,18 @@ from modules.security import get_current_active_user
 from modules.word_info import get_word_info_from_search, get_word_info
 import modules.serialization as serialization
 
-words = APIRouter(tags=['words'])
+words = APIRouter(prefix='/users/me/words', tags=['user_words'])
 
 
-@words.get("/users/me/words/")
+@words.get('')
 async def read_own_words(
         current_user: Annotated[UserOut, Depends(get_current_active_user)]
 ) -> list[WordOut]:
     db_users_words = db_manager.get_user_words(current_user.id)
-    users_words_out = []
-    for user_word in db_users_words:
-        users_words_out.append(serialization.word_out_from_user_word(user_word))
-    return users_words_out
+    return serialization.word_out_list_from_user_words(db_users_words)
 
 
-@words.get("/users/me/words/{user_word_id}")
+@words.get('/{user_word_id}')
 async def get_own_word(
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
         user_word_id: Annotated[int, Path(title='UserWord id', ge=1)]
@@ -36,7 +33,7 @@ async def get_own_word(
     return serialization.word_out_from_user_word(db_word)
 
 
-@words.post("/users/me/words")
+@words.post('')
 async def add_user_word(
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
         word: WordIn
@@ -79,7 +76,7 @@ async def add_user_word(
     return serialization.word_out_from_user_word(db_user_word)
 
 
-@words.delete("/users/me/words/{user_word_id}")
+@words.delete('/{user_word_id}')
 async def remove_user_word(
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
         user_word_id: Annotated[int, Path(ge=1)]
@@ -95,7 +92,7 @@ async def remove_user_word(
     return serialization.word_out_from_user_word(the_word)
 
 
-@words.patch("/users/me/words/{user_word_id}")
+@words.patch('/{user_word_id}')
 async def patch_own_word(user_word_id: Annotated[int, Path(ge=1)],
                          current_user: Annotated[UserOut, Depends(get_current_active_user)],
                          word: WordPatch) -> WordOut:
@@ -125,7 +122,7 @@ async def patch_own_word(user_word_id: Annotated[int, Path(ge=1)],
     return serialization.word_out_from_user_word(updated_db_user_word)
 
 
-@words.put("/users/me/words/{user_word_id}")
+@words.put('/{user_word_id}')
 async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
                           current_user: Annotated[UserOut, Depends(get_current_active_user)],
                           word: WordIn) -> WordOut:

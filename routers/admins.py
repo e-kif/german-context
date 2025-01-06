@@ -4,6 +4,7 @@ from typing import Annotated
 from data.schemas import UserOut, UserIn, UserPatch, UserInRole, WordOut
 from data.database_manager import db_manager
 from modules.security import get_current_user, get_password_hash
+import modules.serialization as serialization
 
 
 def is_user_admin(current_user: Annotated[UserOut, Depends(get_current_user)]) -> bool:
@@ -13,10 +14,17 @@ def is_user_admin(current_user: Annotated[UserOut, Depends(get_current_user)]) -
     return True
 
 
-admins = APIRouter(prefix='/admin', dependencies=[Depends(is_user_admin)], tags=['admin'])
+admin_users = APIRouter(prefix='/admin/users', dependencies=[Depends(is_user_admin)], tags=['admin_users'])
+admin_words = APIRouter(prefix='/admin/words', dependencies=[Depends(is_user_admin)], tags=['admin_words'])
+admin_user_words = APIRouter(prefix='/admin/user', dependencies=[Depends(is_user_admin)], tags=['admin_user_words'])
 
 
-@admins.post("/user/add")
+@admin_users.get('')
+async def get_users() -> list[UserOut]:
+    return db_manager.get_users()
+
+
+@admin_users.post('/add')
 async def add_user(user: UserInRole) -> UserOut:
     new_user = db_manager.add_user(
         username=user.username,
@@ -31,8 +39,8 @@ async def add_user(user: UserInRole) -> UserOut:
     return new_user
 
 
-@admins.get("/user/{user_id}")
-async def get_user(user_id: Annotated[int, Path(ge=0, title='User ID')]) -> UserOut:
+@admin_users.get('{user_id}')
+async def get_user(user_id: Annotated[int, Path(ge=1, title='User ID')]) -> UserOut:
     user = db_manager.get_user_by_id(user_id)
     if isinstance(user, str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -40,7 +48,7 @@ async def get_user(user_id: Annotated[int, Path(ge=0, title='User ID')]) -> User
     return user
 
 
-@admins.delete("/user/{user_id}")
+@admin_users.delete('/{user_id}')
 async def remove_user(user_id: Annotated[int, Path(title='User ID', ge=1)]):
     delete_user = db_manager.delete_user(user_id)
     if isinstance(delete_user, str):
@@ -49,7 +57,7 @@ async def remove_user(user_id: Annotated[int, Path(title='User ID', ge=1)]):
     return {'Success': f'User {delete_user} was deleted successfully.'}
 
 
-@admins.put("/user/{user_id}")
+@admin_users.put('/{user_id}')
 async def update_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
                       user: UserIn) -> UserOut:
     updated_user = db_manager.update_user(
@@ -65,7 +73,7 @@ async def update_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
     return updated_user
 
 
-@admins.patch("/user/{user_id}")
+@admin_users.patch('/{user_id}')
 async def patch_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
                      user: UserPatch) -> UserOut:
     db_user = db_manager.get_user_by_id(user_id)
@@ -79,7 +87,7 @@ async def patch_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
     return db_user_updated
 
 
-@admins.get("/user/{user_id}/words", tags=["user_words"])
+@admin_user_words.get('/{user_id}/words')
 async def get_user_words(user_id: Annotated[int, Path(title='User ID', ge=1)]) -> list[WordOut]:
     user_words = db_manager.get_user_words(user_id)
-    return user_words
+    return serialization.word_out_list_from_user_words(user_words)

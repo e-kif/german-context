@@ -23,6 +23,10 @@ def word_out_from_user_word(user_word: UserWord) -> WordOut:
     return word_out
 
 
+def word_out_list_from_user_words(user_words: list[UserWord]) -> list[WordOut]:
+    return [word_out_from_user_word(user_word) for user_word in user_words]
+
+
 if __name__ == '__main__':
     word = db_manager.get_user_words(1)[0]
     print(word_out_from_user_word(word))

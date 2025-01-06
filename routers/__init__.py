@@ -1,4 +1,6 @@
 from .users import users
 from .security import security
 from .words import words
-from .admins import admins
+from .admins import admin_users
+from .admins import admin_words
+from .admins import admin_user_words
