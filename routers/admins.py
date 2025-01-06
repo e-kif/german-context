@@ -1,24 +1,23 @@
 from fastapi import APIRouter, Path, HTTPException, status, Depends
-from typing import Annotated, Any
+from typing import Annotated
 
-from data.schemas import UserOut, UserIn, UserPatch, UserInRole
+from data.schemas import UserOut, UserIn, UserPatch, UserInRole, WordOut
 from data.database_manager import db_manager
 from modules.security import get_current_user, get_password_hash
 
-admins = APIRouter(tags=["admins"])
 
-
-def is_user_admin(user: UserOut) -> bool:
-    if not db_manager.check_user_role(user.id, 'Admin'):
+def is_user_admin(current_user: Annotated[UserOut, Depends(get_current_user)]) -> bool:
+    if not db_manager.check_user_role(current_user.id, 'Admin'):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail=f'User "{user.username}" is not an Admin. Not enough privileges.')
+                            detail=f'User "{current_user.username}" is not an Admin. Not enough privileges.')
     return True
 
 
+admins = APIRouter(prefix='/admin', dependencies=[Depends(is_user_admin)], tags=['admin'])
+
+
 @admins.post("/user/add")
-async def add_user(user: UserInRole,
-                   current_user: Annotated[UserOut, Depends(get_current_user)]) -> UserOut:
-    is_user_admin(current_user)
+async def add_user(user: UserInRole) -> UserOut:
     new_user = db_manager.add_user(
         username=user.username,
         email=user.email,
@@ -32,10 +31,8 @@ async def add_user(user: UserInRole,
     return new_user
 
 
-@admins.get("/user/{user_id}", response_model=UserOut)
-async def get_user(user_id: Annotated[int, Path(ge=0, title='User ID')],
-                   current_user: Annotated[UserOut, Depends(get_current_user)]) -> Any:
-    is_user_admin(current_user)
+@admins.get("/user/{user_id}")
+async def get_user(user_id: Annotated[int, Path(ge=0, title='User ID')]) -> UserOut:
     user = db_manager.get_user_by_id(user_id)
     if isinstance(user, str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -44,9 +41,7 @@ async def get_user(user_id: Annotated[int, Path(ge=0, title='User ID')],
 
 
 @admins.delete("/user/{user_id}")
-async def remove_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
-                      current_user: Annotated[UserOut, Depends(get_current_user)]):
-    is_user_admin(current_user)
+async def remove_user(user_id: Annotated[int, Path(title='User ID', ge=1)]):
     delete_user = db_manager.delete_user(user_id)
     if isinstance(delete_user, str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -56,9 +51,7 @@ async def remove_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
 
 @admins.put("/user/{user_id}")
 async def update_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
-                      user: UserIn,
-                      current_user: Annotated[UserOut, Depends(get_current_user)]) -> UserOut:
-    is_user_admin(current_user)
+                      user: UserIn) -> UserOut:
     updated_user = db_manager.update_user(
         user_id=user_id,
         username=user.username,
@@ -74,9 +67,7 @@ async def update_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
 
 @admins.patch("/user/{user_id}")
 async def patch_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
-                     user: UserPatch,
-                     current_user: Annotated[UserOut, Depends(get_current_user)]) -> UserOut:
-    is_user_admin(current_user)
+                     user: UserPatch) -> UserOut:
     db_user = db_manager.get_user_by_id(user_id)
     if isinstance(db_user, str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -86,3 +77,9 @@ async def patch_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
     updated_user = stored_user_model.model_copy(update=update_data)
     db_user_updated = await update_user(user_id, updated_user)
     return db_user_updated
+
+
+@admins.get("/user/{user_id}/words", tags=["user_words"])
+async def get_user_words(user_id: Annotated[int, Path(title='User ID', ge=1)]) -> list[WordOut]:
+    user_words = db_manager.get_user_words(user_id)
+    return user_words
