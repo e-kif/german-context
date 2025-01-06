@@ -1,13 +1,10 @@
 from fastapi import FastAPI
 import routers
 
-from data.schemas import UserOut
-from data.database_manager import db_manager
-
 app = FastAPI()
 
 
-@app.get("/")
+@app.get("/", tags=['Home'])
 async def home():
     return {'message': 'Welcome to the German-Context App!'}
 
