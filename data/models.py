@@ -44,7 +44,7 @@ class UserRole(Base):
     __tablename__ = 'user_roles'
 
     id = Column(Integer, Sequence('user_roles_id_seq'), primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, unique=True)
     role_id = Column(Integer, ForeignKey('roles.id'), nullable=False)
 
     user = relationship("User", back_populates="user_role")

@@ -4,9 +4,12 @@ from random import randint
 from typing import Literal
 
 
-def get_soup_for_word(word: str) -> BeautifulSoup:
+def get_soup_for_word(word: str) -> BeautifulSoup | str:
     base_url = 'https://www.woerter.net/?w='
-    response = requests.get(base_url + word.replace(' ', '+'))
+    try:
+        response = requests.get(base_url + word.replace(' ', '+'))
+    except requests.exceptions.ConnectionError:
+        return f'Connection problem. Try again later.'
     if response.status_code == 200:
         soup = BeautifulSoup(response.text, 'html.parser')
         return soup
@@ -22,7 +25,10 @@ def get_wordlist_from_word_search(
 ) -> list[dict] | dict | str:
     base_url = 'https://woerter.net'
     search_url = base_url + '/search/?w='
-    response = requests.get(search_url + word.replace(' ', '+'))
+    try:
+        response = requests.get(search_url + word.replace(' ', '+'))
+    except requests.exceptions.ConnectionError:
+        return 'Connection problem. Try again later.'
     if response.status_code == 200:
         soup = BeautifulSoup(response.text, 'html.parser')
         word_cards = soup.find_all('div', attrs={'class': 'bTrf rClear'})
@@ -140,6 +146,8 @@ def get_word_example(soup: BeautifulSoup) -> list[str]:
 
 def get_word_info(word: str) -> dict | str:
     soup = get_soup_for_word(word)
+    if isinstance(soup, str):
+        return soup
     word, soup = get_word_from_soup(soup)
     if not soup:
         return word
