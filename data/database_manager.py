@@ -179,7 +179,11 @@ class DataManager:
     def get_topic_by_id(self, topic: str) -> Topic:
         pass
 
-    def get_words(self) -> list[type[Word]]:
+    def get_words(self, limit: int = None, skip: int = 0) -> list[type[Word]]:
+        if limit:
+            offset_value = (limit * skip)
+            db_words = self.session.query(Word).limit(limit).offset(offset_value).all()
+            return db_words
         return self.session.query(Word).all()
 
     def get_word_by_id(self, word_id: int) -> type[Word]:

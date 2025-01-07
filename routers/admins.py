@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Path, HTTPException, status, Depends
+from fastapi import APIRouter, Path, Query, HTTPException, status, Depends
 from typing import Annotated
 
 from data.schemas import UserOut, UserIn, UserPatch, UserInRole, WordOut, WordIn, WordPatch, AdminWordOut
@@ -218,6 +218,7 @@ async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
 
 
 @admin_words.get('')
-async def get_words() -> list[AdminWordOut]:
-    words = db_manager.get_words()
+async def get_words(limit: Annotated[int | None, Query(ge=0, title='Pagination Limit')] = None,
+                    skip: Annotated[int, Query(ge=0, title='Pagination page offset')] = 0) -> list[AdminWordOut]:
+    words = db_manager.get_words(limit=limit, skip=skip)
     return serialization.admin_wordlist_from_words(words)
