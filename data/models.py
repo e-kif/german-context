@@ -138,7 +138,7 @@ class UserWord(Base):
     topic = relationship("Topic", back_populates="users_words")
     users_words_topics = relationship("UserWordTopic", cascade="all, delete-orphan", back_populates="user_words")
     custom_translation = relationship("UserWordTranslation", back_populates="user_word", uselist=False)
-    example = relationship("UserWordExample", back_populates="user_word", uselist=False)
+    example = relationship("UserWordExample", back_populates="user_word", uselist=False, cascade="all, delete")
     user_level = relationship("UserWordLevel", cascade="all, delete", back_populates="user_word")
 
     def __str__(self):

@@ -17,7 +17,8 @@ def is_user_admin(current_user: Annotated[UserOut, Depends(get_current_user)]) -
 
 admin_users = APIRouter(prefix='/admin/users', dependencies=[Depends(is_user_admin)], tags=['admin_users'])
 admin_words = APIRouter(prefix='/admin/words', dependencies=[Depends(is_user_admin)], tags=['admin_words'])
-admin_user_words = APIRouter(prefix='/admin/user_words', dependencies=[Depends(is_user_admin)], tags=['admin_user_words'])
+admin_user_words = APIRouter(prefix='/admin/user_words', dependencies=[Depends(is_user_admin)],
+                             tags=['admin_user_words'])
 
 
 @admin_users.get('')
@@ -139,14 +140,21 @@ async def add_user_word(user_id: Annotated[int, Path(title='User ID', ge=1)],
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                             detail=f"User '{db_user.username}' already has word '{the_word}' "
                                    f"({parsed_word['word_type']}).")
+    db_word = db_manager.get_word_by_word(the_word, parsed_word['word_type'])
+    if isinstance(db_word, str):
+        db_user_word = db_manager.add_user_word(user_id=db_user.id,
+                                                word=parsed_word,
+                                                example=word.example,
+                                                example_translation=word.example_translation,
+                                                topic=word.topic,
+                                                translation=word.english)
+        if custom_word:
+            db_manager.add_non_parsed_word_record(db_user.id, db_user_word.word.id)
+        return serialization.word_out_from_user_word(db_user_word)
     db_user_word = db_manager.add_user_word(user_id=db_user.id,
                                             word=parsed_word,
-                                            example=word.example,
-                                            example_translation=word.example_translation,
                                             topic=word.topic,
                                             translation=word.english)
-    if custom_word:
-        db_manager.add_non_parsed_word_record(db_user.id, db_user_word.word.id)
     return serialization.word_out_from_user_word(db_user_word)
 
 

@@ -65,14 +65,21 @@ async def add_user_word(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                             detail=f"User '{current_user.username}' already has word '{the_word}' "
                                    f"({parsed_word['word_type']}).")
+    db_word = db_manager.get_word_by_word(the_word, parsed_word['word_type'])
+    if isinstance(db_word, str):
+        db_user_word = db_manager.add_user_word(user_id=current_user.id,
+                                                word=parsed_word,
+                                                example=word.example,
+                                                example_translation=word.example_translation,
+                                                topic=word.topic,
+                                                translation=word.english)
+        if custom_word:
+            db_manager.add_non_parsed_word_record(current_user.id, db_user_word.word.id)
+        return serialization.word_out_from_user_word(db_user_word)
     db_user_word = db_manager.add_user_word(user_id=current_user.id,
                                             word=parsed_word,
-                                            example=word.example,
-                                            example_translation=word.example_translation,
                                             topic=word.topic,
                                             translation=word.english)
-    if custom_word:
-        db_manager.add_non_parsed_word_record(current_user.id, db_user_word.word.id)
     return serialization.word_out_from_user_word(db_user_word)
 
 
