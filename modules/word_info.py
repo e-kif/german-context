@@ -141,7 +141,10 @@ def get_word_example(soup: BeautifulSoup) -> list[str]:
         example2 = example.text.split('\xa0')[-1].strip().replace('\n', ' ')
         if example2:
             break
-    return [example1, example2]
+    try:
+        return [example1, example2]
+    except NameError:
+        return []
 
 
 def get_word_info(word: str) -> dict | str:
@@ -157,6 +160,8 @@ def get_word_info(word: str) -> dict | str:
     example = get_word_example(soup)
     if level and word_type:
         word_info.update({'level': level, 'word_type': word_type})
+        if word_info['level'].upper() not in ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']:
+            word_info['level'] = 'Unknown'
     if translation:
         word_info.update({'translation': translation})
     if example:

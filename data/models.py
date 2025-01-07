@@ -58,7 +58,7 @@ class Word(Base):
     word = Column(String, nullable=False)
     word_type_id = Column(Integer, ForeignKey('word_types.id', ondelete='CASCADE'), nullable=False)
     english = Column(String, nullable=False)
-    level = Column(String, nullable=False)
+    level = Column(String)
     __table_args__ = UniqueConstraint('word', 'word_type_id', name='_unique_word'),
 
     word_type = relationship("WordType", back_populates="words")

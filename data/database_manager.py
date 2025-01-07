@@ -3,7 +3,7 @@ import datetime
 
 from dotenv import load_dotenv
 from sqlalchemy import URL, create_engine, exc, text
-from sqlalchemy.orm import sessionmaker, load_only
+from sqlalchemy.orm import sessionmaker
 
 from data.models import *
 from modules.word_info import get_word_info_from_search

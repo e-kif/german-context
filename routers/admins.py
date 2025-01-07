@@ -41,7 +41,7 @@ async def add_user(user: UserInRole) -> UserOut:
     return new_user
 
 
-@admin_users.get('{user_id}')
+@admin_users.get('/{user_id}')
 async def get_user(user_id: Annotated[int, Path(ge=1, title='User ID')]) -> UserOut:
     user = db_manager.get_user_by_id(user_id)
     if isinstance(user, str):
@@ -222,3 +222,12 @@ async def get_words(limit: Annotated[int | None, Query(ge=0, title='Pagination L
                     skip: Annotated[int, Query(ge=0, title='Pagination page offset')] = 0) -> list[AdminWordOut]:
     words = db_manager.get_words(limit=limit, skip=skip)
     return serialization.admin_wordlist_from_words(words)
+
+
+@admin_words.get('/{word_id}')
+async def get_word(word_id: Annotated[int, Path(title='Word ID', ge=1)]) -> AdminWordOut:
+    db_word = db_manager.get_word_by_id(word_id)
+    if isinstance(db_word, str):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=db_word)
+    return serialization.admin_word_from_word(db_word)
