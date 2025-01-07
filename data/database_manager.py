@@ -3,7 +3,7 @@ import datetime
 
 from dotenv import load_dotenv
 from sqlalchemy import URL, create_engine, exc, text
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, load_only
 
 from data.models import *
 from modules.word_info import get_word_info_from_search
@@ -185,6 +185,10 @@ class DataManager:
             db_words = self.session.query(Word).limit(limit).offset(offset_value).all()
             return db_words
         return self.session.query(Word).all()
+
+    def get_word_users(self, word_id: int) -> list[int]:
+        word_users = {user_word.user_id for user_word in self.session.query(UserWord).filter_by(word_id=word_id).all()}
+        return list(word_users)
 
     def get_word_by_id(self, word_id: int) -> type[Word]:
         try:
@@ -426,4 +430,5 @@ db_manager = DataManager(url_object)
 if __name__ == '__main__':
     # db_manager.session.rollback()
     # print(db_manager.check_user_role(1, 'User'))
-    print(db_manager.get_users())
+    # print(db_manager.get_users())
+    print(db_manager.get_word_users(11))

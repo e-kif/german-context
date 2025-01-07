@@ -16,12 +16,11 @@ app.include_router(routers.admin_user_words)
 app.include_router(routers.admin_words)
 app.include_router(routers.security)
 
-# todo user roles
 # todo user activation mail
 # todo topics endpoints
 # todo search words by syllables endpoint
 # todo show cards logic
-# todo words pagination
+# todo paginations
 # todo pep8
 # todo conjugations, declensions (nouns, pronouns, adjectives, articles, verbs)
 

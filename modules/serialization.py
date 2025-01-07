@@ -34,7 +34,9 @@ def admin_word_from_word(db_word: Word) -> AdminWordOut:
         word_type=db_word.word_type.name,
         english=db_word.english,
         level=db_word.level,
+        users=db_manager.get_word_users(db_word.id)
     )
+
     if db_word.example:
         admin_word_out.example = db_word.example.example
         admin_word_out.example_translation = db_word.example.translation
