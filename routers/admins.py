@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Path, HTTPException, status, Depends
 from typing import Annotated
 
-from data.schemas import UserOut, UserIn, UserPatch, UserInRole, WordOut, WordIn, WordPatch
+from data.schemas import UserOut, UserIn, UserPatch, UserInRole, WordOut, WordIn, WordPatch, AdminWordOut
 from data.database_manager import db_manager
 from modules.security import get_current_user, get_password_hash
 import modules.serialization as serialization
@@ -215,3 +215,9 @@ async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
         example_translation=word.example_translation
     )
     return serialization.word_out_from_user_word(updated_db_user_word)
+
+
+@admin_words.get('')
+async def get_words() -> list[AdminWordOut]:
+    words = db_manager.get_words()
+    return serialization.admin_wordlist_from_words(words)

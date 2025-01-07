@@ -53,14 +53,17 @@ class WordIn(WordBase):
                        'Adverb', 'Article', 'Particle'] | None = None
 
 
-class WordOut(WordBase):
+class AdminWordOut(WordBase):
     id: int
     word_type: str
     english: str
     level: str
-    topic: str
     example: str | None = None
     example_translation: str | None = None
+
+
+class WordOut(AdminWordOut):
+    topic: str
 
 
 class WordPatch(WordIn):
