@@ -94,7 +94,6 @@ class WordType(Base):
 
     id = Column(Integer, Sequence('word_type_id_seq'), primary_key=True)
     name = Column(String, unique=True, nullable=False)
-    # questions = Column(String)
 
     words = relationship("Word", cascade="all, delete-orphan", back_populates="word_type")
 
@@ -137,7 +136,8 @@ class UserWord(Base):
     user = relationship("User", back_populates="users_words")
     topic = relationship("Topic", back_populates="users_words")
     users_words_topics = relationship("UserWordTopic", cascade="all, delete-orphan", back_populates="user_words")
-    custom_translation = relationship("UserWordTranslation", back_populates="user_word", uselist=False)
+    custom_translation = relationship("UserWordTranslation", back_populates="user_word",
+                                      uselist=False, cascade="all, delete")
     example = relationship("UserWordExample", back_populates="user_word", uselist=False, cascade="all, delete")
     user_level = relationship("UserWordLevel", cascade="all, delete", back_populates="user_word")
 
@@ -153,8 +153,8 @@ class UserWordTranslation(Base):
     __tablename__ = 'users_words_translations'
 
     id = Column(Integer, Sequence('users_words_translations_id_seq'), primary_key=True)
-    user_word_id = Column(Integer, ForeignKey('users_words.id', ondelete='CASCADE'))
-    translation = Column(String)
+    user_word_id = Column(Integer, ForeignKey('users_words.id', ondelete='CASCADE'), nullable=False)
+    translation = Column(String, nullable=False)
 
     user_word = relationship("UserWord", back_populates="custom_translation")
 

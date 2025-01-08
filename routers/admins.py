@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Path, Query, HTTPException, status, Depends
 from typing import Annotated
 
-from data.schemas import UserOut, UserIn, UserPatch, UserInRole, WordOut, WordIn, WordPatch, AdminWordOut
+from data.schemas import (UserOut, UserOutAdmin, UserIn, UserPatchAdmin, UserInAdmin,
+                          WordOut, WordIn, WordPatch, AdminWordOut)
 from data.database_manager import db_manager
 from modules.security import get_current_user, get_password_hash
 import modules.serialization as serialization
@@ -22,12 +23,14 @@ admin_user_words = APIRouter(prefix='/admin/user_words', dependencies=[Depends(i
 
 
 @admin_users.get('')
-async def get_users() -> list[UserOut]:
-    return db_manager.get_users()
+async def get_users() -> list[UserOutAdmin]:
+    users = db_manager.get_users()
+    users_out = [serialization.user_out_admin(user) for user in users]
+    return users_out
 
 
 @admin_users.post('/add')
-async def add_user(user: UserInRole) -> UserOut:
+async def add_user(user: UserInAdmin) -> UserOutAdmin:
     new_user = db_manager.add_user(
         username=user.username,
         email=user.email,
@@ -42,26 +45,26 @@ async def add_user(user: UserInRole) -> UserOut:
 
 
 @admin_users.get('/{user_id}')
-async def get_user(user_id: Annotated[int, Path(ge=1, title='User ID')]) -> UserOut:
+async def get_user(user_id: Annotated[int, Path(ge=1, title='User ID')]) -> UserOutAdmin:
     user = db_manager.get_user_by_id(user_id)
     if isinstance(user, str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=user)
-    return user
+    return serialization.user_out_admin(user)
 
 
 @admin_users.delete('/{user_id}')
-async def remove_user(user_id: Annotated[int, Path(title='User ID', ge=1)]):
+async def remove_user(user_id: Annotated[int, Path(title='User ID', ge=1)]) -> UserOutAdmin:
     delete_user = db_manager.delete_user(user_id)
     if isinstance(delete_user, str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=delete_user)
-    return {'Success': f'User {delete_user} was deleted successfully.'}
+    return serialization.user_out_admin(delete_user)
 
 
 @admin_users.put('/{user_id}')
 async def update_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
-                      user: UserIn) -> UserOut:
+                      user: UserInAdmin) -> UserOutAdmin:
     updated_user = db_manager.update_user(
         user_id=user_id,
         username=user.username,
@@ -72,12 +75,12 @@ async def update_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
     if isinstance(updated_user, str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=updated_user)
-    return updated_user
+    return serialization.user_out_admin(updated_user)
 
 
 @admin_users.patch('/{user_id}')
 async def patch_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
-                     user: UserPatch) -> UserOut:
+                     user: UserPatchAdmin) -> UserOutAdmin:
     db_user = db_manager.get_user_by_id(user_id)
     if isinstance(db_user, str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -218,7 +221,7 @@ async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
 
 
 @admin_words.get('')
-async def get_words(limit: Annotated[int | None, Query(ge=0, title='Pagination Limit')] = None,
+async def get_words(limit: Annotated[int | None, Query(ge=0, title="Pagination Limit")] = None,
                     skip: Annotated[int, Query(ge=0, title='Pagination page offset')] = 0) -> list[AdminWordOut]:
     words = db_manager.get_words(limit=limit, skip=skip)
     return serialization.admin_wordlist_from_words(words)

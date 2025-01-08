@@ -22,8 +22,12 @@ class UserIn(UserBase):
     password: str
 
 
-class UserInRole(UserIn):
+class UserInAdmin(UserIn):
     role: Literal['User', 'Manager', 'Admin'] = 'User'
+
+
+class UserOutAdmin(UserOut):
+    role: str
 
 
 class UserLogin(BaseModel):
@@ -36,6 +40,10 @@ class UserPatch(BaseModel):
     email: EmailStr | None = None
     password: str | None = None
     level: Literal['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] | None = None
+
+
+class UserPatchAdmin(UserPatch):
+    role: str | None = None
 
 
 class WordBase(BaseModel):

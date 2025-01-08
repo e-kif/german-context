@@ -36,7 +36,6 @@ def admin_word_from_word(db_word: Word) -> AdminWordOut:
         level=db_word.level,
         users=db_manager.get_word_users(db_word.id)
     )
-
     if db_word.example:
         admin_word_out.example = db_word.example.example
         admin_word_out.example_translation = db_word.example.translation
@@ -47,6 +46,11 @@ def admin_wordlist_from_words(words: list[Word]) -> list[AdminWordOut]:
     if not words:
         return []
     return [admin_word_from_word(admin_word) for admin_word in words]
+
+
+def user_out_admin(user: User) -> UserOutAdmin:
+    user.role = user.user_role.role.name
+    return user
 
 
 if __name__ == '__main__':
