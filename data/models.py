@@ -186,11 +186,12 @@ class UserWordTopic(Base):
     __tablename__ = 'users_words_topics'
 
     id = Column(Integer, Sequence('users_words_topic_id_seq'), primary_key=True)
-    user_words_id = Column(Integer, ForeignKey('users_words.id', ondelete='CASCADE'))
+    user_word_id = Column(Integer, ForeignKey('users_words.id', ondelete='CASCADE'))
     topic_id = Column(Integer, ForeignKey('topics.id', ondelete='CASCADE'))
 
     user_words = relationship("UserWord", back_populates="users_words_topics")
     topic = relationship("Topic", back_populates="users_words_topics")
+    __table_args__ = UniqueConstraint('user_word_id', 'topic_id', name='_unique_user_word_topic'),
 
 
 class NonParsedWord(Base):

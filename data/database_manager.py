@@ -229,13 +229,13 @@ class DataManager:
             user_id=user_id,
             last_shown=datetime.datetime(1, 1, 1)
         )
-        if not topic:
-            topic = 'Default'
-        db_topic = self.add_topic(topic)
-        user_word.topic_id = db_topic.id
         self.session.add(user_word)
         self.session.commit()
         self.session.refresh(user_word)
+        if not topic:
+            topic = 'Default'
+        db_topic = self.add_topic(topic)
+        self.add_user_word_topic(user_word.id, db_topic.id)
         if not example and word.get('example'):
             self.add_word_example(db_word.id, word['example'][0], word['example'][1])
         elif example:
@@ -243,6 +243,18 @@ class DataManager:
         if translation:
             self.add_user_word_translation(user_word.id, translation)
         return user_word
+
+    def add_user_word_topic(self, user_word_id: int, topic_id: int) -> UserWordTopic:
+        user_word_topic = UserWordTopic(user_word_id=user_word_id,
+                                        topic_id=topic_id)
+        try:
+            self.session.add(user_word_topic)
+            self.session.commit()
+            self.session.refresh(user_word_topic)
+        except exc.IntegrityError:
+            user_word_topic = self.session.query(UserWordTopic).filter_by(user_word_id=user_word_id) \
+                .filter_by(topic_id=topic_id).one()
+        return user_word_topic
 
     def add_word_example(self, word_id: int, example: str, translation: str) -> WordExample:
         try:
