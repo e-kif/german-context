@@ -254,7 +254,8 @@ class DataManager:
             self.session.commit()
             self.session.refresh(user_word_topic)
         except exc.IntegrityError:
-            user_word_topic = self.session.query(UserWordTopic).filter_by(user_word_id=user_word_id) \
+            self.session.rollback()
+            user_word_topic = self.session.query(UserWordTopic).filter_by(user_word_id=user_word_id)\
                 .filter_by(topic_id=topic_id).one()
         return user_word_topic
 
@@ -342,7 +343,7 @@ class DataManager:
                          word_type: str = None,
                          english: str = None,
                          level: str = None,
-                         topic: str = None,
+                         topics: list[str] = None,
                          example: str = None,
                          example_translation: str = None) -> UserWord | str:
         db_user_word = self.get_user_word_by_id(user_word_id)
@@ -388,7 +389,8 @@ class DataManager:
             if example != db_user_word.example.example or example_translation != db_user_word.example.translation:
                 db_user_word.example.example = example
                 db_user_word.example.translation = example_translation
-        db_user_word.topic_id = self.add_topic(topic).id
+        for topic in topics:
+            self.add_user_word_topic(db_user_word.id, self.add_topic(topic).id)
         self.session.commit()
         self.session.refresh(db_user_word)
         return db_user_word

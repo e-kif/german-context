@@ -120,7 +120,7 @@ async def patch_own_word(user_word_id: Annotated[int, Path(ge=1)],
         word_type=updated_user_word.word_type,
         english=updated_user_word.english,
         level=updated_user_word.level,
-        topic=updated_user_word.topic,
+        topics=updated_user_word.topics,
         example=updated_user_word.example,
         example_translation=updated_user_word.example_translation
     )
