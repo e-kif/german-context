@@ -10,7 +10,7 @@ def word_out_from_user_word(user_word: UserWord) -> WordOut:
         word_type=user_word.word.word_type.name,
         english=user_word.word.english,
         level=user_word.word.level,
-        topic=user_word.topic.name
+        topics=[word_topic.topic.name for word_topic in user_word.user_word_topic]
     )
     if user_word.word.example:
         word_out.example = user_word.word.example.example
@@ -54,5 +54,5 @@ def user_out_admin(user: User) -> UserOutAdmin:
 
 
 if __name__ == '__main__':
-    word = db_manager.get_user_words(1)[0]
+    word = db_manager.get_user_words(6)[0]
     print(word_out_from_user_word(word))

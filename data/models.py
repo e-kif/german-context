@@ -108,7 +108,7 @@ class WordExample(Base):
     __tablename__ = 'words_examples'
 
     id = Column(Integer, Sequence('word_example_id_seq'), primary_key=True)
-    word_id = Column(Integer, ForeignKey('words.id', ondelete='CASCADE'), unique=True)
+    word_id = Column(Integer, ForeignKey('words.id', ondelete='CASCADE'), unique=True, nullable=False)
     example = Column(String, nullable=False)
     translation = Column(String)
 
@@ -125,9 +125,9 @@ class UserWord(Base):
     __tablename__ = 'users_words'
 
     id = Column(Integer, Sequence('users_word_id_seq'), primary_key=True)
-    word_id = Column(Integer, ForeignKey('words.id', ondelete='CASCADE'))
-    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'))
-    topic_id = Column(Integer, ForeignKey('topics.id', ondelete='CASCADE'))
+    word_id = Column(Integer, ForeignKey('words.id', ondelete='CASCADE'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    topic_id = Column(Integer, ForeignKey('topics.id', ondelete='CASCADE'), nullable=False)
     fails = Column(Integer, default=0)
     success = Column(Integer, default=0)
     last_shown = Column(DateTime)
@@ -135,7 +135,7 @@ class UserWord(Base):
     word = relationship("Word", back_populates="users_word")
     user = relationship("User", back_populates="users_words")
     topic = relationship("Topic", back_populates="users_words")
-    users_words_topics = relationship("UserWordTopic", cascade="all, delete-orphan", back_populates="user_words")
+    user_word_topic = relationship("UserWordTopic", cascade="all, delete-orphan", back_populates="user_word")
     custom_translation = relationship("UserWordTranslation", back_populates="user_word",
                                       uselist=False, cascade="all, delete")
     example = relationship("UserWordExample", back_populates="user_word", uselist=False, cascade="all, delete")
@@ -169,7 +169,7 @@ class UserWordExample(Base):
     __tablename__ = 'users_words_examples'
 
     id = Column(Integer, Sequence('users_words_examples_id_seq'), primary_key=True)
-    users_words_id = Column(Integer, ForeignKey('users_words.id', ondelete='CASCADE'), unique=True)
+    user_word_id = Column(Integer, ForeignKey('users_words.id', ondelete='CASCADE'), unique=True, nullable=False)
     example = Column(String, nullable=False)
     translation = Column(String)
 
@@ -189,8 +189,8 @@ class UserWordTopic(Base):
     user_word_id = Column(Integer, ForeignKey('users_words.id', ondelete='CASCADE'))
     topic_id = Column(Integer, ForeignKey('topics.id', ondelete='CASCADE'))
 
-    user_words = relationship("UserWord", back_populates="users_words_topics")
-    topic = relationship("Topic", back_populates="users_words_topics")
+    user_word = relationship("UserWord", back_populates="user_word_topic", cascade="all, delete")
+    topic = relationship("Topic", back_populates="users_words_topics", cascade="all, delete-orphan", single_parent=True)
     __table_args__ = UniqueConstraint('user_word_id', 'topic_id', name='_unique_user_word_topic'),
 
 

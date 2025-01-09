@@ -71,7 +71,7 @@ class AdminWord(WordBase):
 
 
 class WordOut(AdminWord):
-    topic: str
+    topics: list[str]
 
 
 class AdminWordOut(AdminWord):

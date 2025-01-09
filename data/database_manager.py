@@ -1,11 +1,13 @@
 import os
 import datetime
+from typing import Type
 
 from dotenv import load_dotenv
 from sqlalchemy import URL, create_engine, exc, text
 from sqlalchemy.orm import sessionmaker
 
 from data.models import *
+from data.models import Topic
 from modules.word_info import get_word_info_from_search
 
 
@@ -123,7 +125,7 @@ class DataManager:
             user.login_attempts += 1
             self.session.commit()
 
-    def update_user(self, user_id: int, username: str, email: str, password: str, level: str) -> type[User] | str:
+    def update_user(self, user_id: int, username: str, email: str, password: str, level: str) -> Type[User] | str:
         user = self.get_user_by_id(user_id)
         if isinstance(user, str):
             return user
@@ -179,7 +181,7 @@ class DataManager:
     def get_topic_by_id(self, topic: str) -> Topic:
         pass
 
-    def get_words(self, limit: int = None, skip: int = 0) -> list[type[Word]]:
+    def get_words(self, limit: int = None, skip: int = 0) -> list[Type[Word]]:
         if limit:
             offset_value = (limit * skip)
             db_words = self.session.query(Word).limit(limit).offset(offset_value).all()
@@ -190,14 +192,14 @@ class DataManager:
         word_users = {user_word.user_id for user_word in self.session.query(UserWord).filter_by(word_id=word_id).all()}
         return list(word_users)
 
-    def get_word_by_id(self, word_id: int) -> type[Word]:
+    def get_word_by_id(self, word_id: int) -> Type[Word]:
         try:
             db_word = self.session.query(Word).filter_by(id=word_id).one()
         except exc.NoResultFound:
             db_word = f'Word with id={word_id} was not found.'
         return db_word
 
-    def get_word_by_word(self, word: str, word_type: str) -> type(Word) | str:
+    def get_word_by_word(self, word: str, word_type: str) -> Type[Word] | str:
         try:
             db_word = (self.session.query(Word).join(WordType)
                        .filter(Word.word == word, WordType.name == word_type).one())
@@ -212,7 +214,7 @@ class DataManager:
             db_user_word = f'User word with id={user_word_id} was not found.'
         return db_user_word
 
-    def get_user_words(self, user_id: int) -> list[type[UserWord]]:
+    def get_user_words(self, user_id: int) -> list[Type[UserWord]]:
         db_users_words = self.session.query(UserWord).filter_by(user_id=user_id).all()
         return db_users_words
 
@@ -258,7 +260,7 @@ class DataManager:
 
     def add_word_example(self, word_id: int, example: str, translation: str) -> WordExample:
         try:
-            db_example = self.session.query(WordExample).filter_by(example=example).one()
+            db_example = self.session.query(WordExample).filter_by(word_id=word_id).one()
         except exc.NoResultFound:
             db_example = WordExample(
                 word_id=word_id,
@@ -357,8 +359,8 @@ class DataManager:
                 old_word = self.session.query(Word).filter_by(id=db_user_word.word_id).one()
                 db_user_word.word_id = db_word.id
                 try:
-                    (self.session.query(UserWord).filter_by(word_id=old_word.id)
-                     .filter(UserWord.user_id != db_user_word.user_id).first())
+                    self.session.query(UserWord).filter_by(word_id=old_word.id)\
+                        .filter(UserWord.user_id.op('!=')(db_user_word.user_id)).first()
                 except exc.NoResultFound:
                     self.session.delete(old_word)
                 if english != db_word.english and not db_user_word.custom_translation:
@@ -425,6 +427,49 @@ class DataManager:
         except exc.NoResultFound:
             db_user_word = f'No user word with id={user_word_id} was found.'
         return db_user_word
+
+    def get_user_topics(self, user_id: int) -> list[Type[Topic]]:
+        user_topics = self.session.query(Topic).join(UserWordTopic).join(UserWord).join(User)\
+            .filter_by(id=user_id).all()
+        return user_topics
+
+    def get_user_topic_words(self, user_id: int, topic_id: int) -> list[Type[UserWord]]:
+        return self.session.query(UserWord).filter_by(user_id=user_id).join(UserWordTopic)\
+            .filter_by(topic_id=topic_id).all()
+
+    def delete_user_topic(self, user_id: int, topic_id: int) -> str | Type[Topic]:
+        try:
+            user_topic = self.session.query(UserWordTopic).filter_by(topic_id=topic_id)\
+                .join(UserWord).filter_by(user_id=user_id).one()
+        except exc.NoResultFound:
+            return f'User topic for user_id={user_id} and topic_id={topic_id} was not found.'
+        self.session.delete(user_topic)
+        self.session.commit()
+        return user_topic
+
+    def update_user_topic(self, user_id: int, topic_id: int, topic_name: str) -> str | Type[Topic]:
+        try:
+            self.session.query(UserWordTopic).filter_by(topic_id=topic_id)\
+                .join(UserWord).filter_by(user_id=user_id).first()
+        except exc.NoResultFound:
+            return f'User with user_id={user_id} has no words in topic with topic_id={topic_id}'
+        try:
+            self.session.query(Topic).filter_by(id=topic_id).join(UserWordTopic)\
+                .join(UserWord).filter(UserWord.user_id != user_id).first()
+            other_user_uses_topic = True
+        except exc.NoResultFound:
+            other_user_uses_topic = False
+        if other_user_uses_topic:
+            db_topic = self.add_topic(topic_name)
+            for user_word in self.get_user_topic_words(user_id, topic_id):
+                user_word.user_word_topic.topic_id = db_topic.id
+            self.session.commit()
+            return db_topic
+        db_topic = self.session.query(Topic).filter_by(id=topic_id).one()
+        db_topic.name = topic_name
+        self.session.commit()
+        self.session.refresh(db_topic)
+        return db_topic
 
 
 load_dotenv()
