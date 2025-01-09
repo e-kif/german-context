@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Path
 from typing import Annotated
 
-from data.schemas import UserOut, WordOut, WordIn, WordPatch
+from data.schemas import UserOut, WordOut, WordIn, WordPatch, TopicOut
 from data.database_manager import db_manager
 from modules.security import get_current_active_user
 from modules.word_info import get_word_info_from_search, get_word_info
 import modules.serialization as serialization
 
 words = APIRouter(prefix='/users/me/words', tags=['user_words'])
+user_topics = APIRouter(prefix='/users/me/topics', tags=['user_topics'])
 
 
 @words.get('')
@@ -55,7 +56,7 @@ async def add_user_word(
             translation=word.english,
             level=word.level,
             word_type=word.word_type,
-            topic=word.topic,
+            topics=word.topics,
             example=word.example,
             example_translation=word.example_translation
         )
@@ -71,14 +72,14 @@ async def add_user_word(
                                                 word=parsed_word,
                                                 example=word.example,
                                                 example_translation=word.example_translation,
-                                                topic=word.topic,
+                                                topics=word.topics,
                                                 translation=word.english)
         if custom_word:
             db_manager.add_non_parsed_word_record(current_user.id, db_user_word.word.id)
         return serialization.word_out_from_user_word(db_user_word)
     db_user_word = db_manager.add_user_word(user_id=current_user.id,
                                             word=parsed_word,
-                                            topic=word.topic,
+                                            topics=word.topics,
                                             translation=word.english)
     return serialization.word_out_from_user_word(db_user_word)
 
@@ -147,8 +148,48 @@ async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
         word_type=word.word_type,
         english=word.english,
         level=word.level,
-        topic=word.topic,
+        topics=word.topics,
         example=word.example,
         example_translation=word.example_translation
     )
     return serialization.word_out_from_user_word(updated_db_user_word)
+
+
+@user_topics.get('')
+def get_own_topics(current_user: Annotated[UserOut, Depends(get_current_active_user)]) -> list[TopicOut]:
+    user_topics_list = db_manager.get_user_topics(current_user.id)
+    if isinstance(user_topics_list, str):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=user_topics_list)
+    return user_topics_list
+
+
+@user_topics.get('/{topic_id}')
+def get_own_topic_words(topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
+                        current_user: Annotated[UserOut, Depends(get_current_active_user)]) -> list[WordOut]:
+    own_topic_words = db_manager.get_user_topic_words(current_user.id, topic_id)
+    if isinstance(own_topic_words, str):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=own_topic_words)
+    return serialization.word_out_list_from_user_words(own_topic_words)
+
+
+@user_topics.put('/{topic_id}')
+def update_own_topic_name(topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
+                          current_user: Annotated[UserOut, Depends(get_current_active_user)],
+                          topic_name: str) -> TopicOut:
+    updated_user_topic = db_manager.update_user_topic(current_user.id, topic_id, topic_name)
+    if isinstance(updated_user_topic, str):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=updated_user_topic)
+    return updated_user_topic
+
+
+@user_topics.delete('/{topic_id}')
+def remove_own_topic(topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
+                     current_user: Annotated[UserOut, Depends(get_current_active_user)]) -> TopicOut:
+    user_topic = db_manager.delete_user_topic(current_user.id, topic_id)
+    if isinstance(user_topic, str):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail=user_topic)
+    return user_topic

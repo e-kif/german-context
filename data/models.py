@@ -143,7 +143,7 @@ class UserWord(Base):
 
     def __str__(self):
         return (f'{self.id}. user={self.user.username}, word={self.word.word}: '
-                f'(fails={self.fails}, success={self.success}, last_shown={self.last_shown}')
+                f'(fails={self.fails}, success={self.success}, last_shown={self.last_shown})')
 
     def __repr__(self):
         return self.__str__()
@@ -189,9 +189,16 @@ class UserWordTopic(Base):
     user_word_id = Column(Integer, ForeignKey('users_words.id', ondelete='CASCADE'))
     topic_id = Column(Integer, ForeignKey('topics.id', ondelete='CASCADE'))
 
-    user_word = relationship("UserWord", back_populates="user_word_topic", cascade="all, delete")
-    topic = relationship("Topic", back_populates="users_words_topics", cascade="all, delete-orphan", single_parent=True)
+    user_word = relationship("UserWord", back_populates="user_word_topic")
+    topic = relationship("Topic", back_populates="users_words_topics")
     __table_args__ = UniqueConstraint('user_word_id', 'topic_id', name='_unique_user_word_topic'),
+
+    def __str__(self):
+        return (f'{self.id}. user_word_id={self.user_word_id} word={self.user_word.word.word} '
+                f'user={self.user_word.user.username} topic={self.topic.name}')
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class NonParsedWord(Base):

@@ -52,7 +52,7 @@ class WordBase(BaseModel):
 
 class WordIn(WordBase):
     english: str | None = None
-    topic: str | None = None
+    topics: list[str] | None = None
     example: str | None = None
     example_translation: str | None = None
     level: Literal['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] | None = None

@@ -223,7 +223,7 @@ class DataManager:
                       word: dict,
                       example: str | None = None,
                       example_translation: str | None = None,
-                      topic: str | None = None,
+                      topics: list[str] | None = None,
                       translation: str | None = None) -> Word | str:
         db_word = self.add_new_word(word)
         user_word = UserWord(
@@ -234,10 +234,11 @@ class DataManager:
         self.session.add(user_word)
         self.session.commit()
         self.session.refresh(user_word)
-        if not topic:
-            topic = 'Default'
-        db_topic = self.add_topic(topic)
-        self.add_user_word_topic(user_word.id, db_topic.id)
+        if not topics:
+            topics = ['Default']
+        for topic in topics:
+            db_topic = self.add_topic(topic)
+            self.add_user_word_topic(user_word.id, db_topic.id)
         if not example and word.get('example'):
             self.add_word_example(db_word.id, word['example'][0], word['example'][1])
         elif example:
@@ -255,7 +256,7 @@ class DataManager:
             self.session.refresh(user_word_topic)
         except exc.IntegrityError:
             self.session.rollback()
-            user_word_topic = self.session.query(UserWordTopic).filter_by(user_word_id=user_word_id)\
+            user_word_topic = self.session.query(UserWordTopic).filter_by(user_word_id=user_word_id) \
                 .filter_by(topic_id=topic_id).one()
         return user_word_topic
 
@@ -275,7 +276,7 @@ class DataManager:
 
     def add_user_word_example(self, user_word_id: int, example: str, translation: str | None) -> UserWordExample:
         user_word_example = UserWordExample(
-            users_words_id=user_word_id,
+            user_word_id=user_word_id,
             example=example,
             translation=translation
         )
@@ -360,7 +361,7 @@ class DataManager:
                 old_word = self.session.query(Word).filter_by(id=db_user_word.word_id).one()
                 db_user_word.word_id = db_word.id
                 try:
-                    self.session.query(UserWord).filter_by(word_id=old_word.id)\
+                    self.session.query(UserWord).filter_by(word_id=old_word.id) \
                         .filter(UserWord.user_id.op('!=')(db_user_word.user_id)).first()
                 except exc.NoResultFound:
                     self.session.delete(old_word)
@@ -389,7 +390,9 @@ class DataManager:
             if example != db_user_word.example.example or example_translation != db_user_word.example.translation:
                 db_user_word.example.example = example
                 db_user_word.example.translation = example_translation
+        print(f'{topics=}')
         for topic in topics:
+            print(f'{topic=}')
             self.add_user_word_topic(db_user_word.id, self.add_topic(topic).id)
         self.session.commit()
         self.session.refresh(db_user_word)
@@ -430,41 +433,59 @@ class DataManager:
             db_user_word = f'No user word with id={user_word_id} was found.'
         return db_user_word
 
-    def get_user_topics(self, user_id: int) -> list[Type[Topic]]:
-        user_topics = self.session.query(Topic).join(UserWordTopic).join(UserWord).join(User)\
+    def get_user_topics(self, user_id: int) -> str | list[Type[Topic]]:
+        try:
+            self.session.query(User).filter_by(id=user_id).one()
+        except exc.NoResultFound:
+            return f'User with user_id={user_id} was not found.'
+        user_topics = self.session.query(Topic).join(UserWordTopic).join(UserWord).join(User) \
             .filter_by(id=user_id).all()
         return user_topics
 
-    def get_user_topic_words(self, user_id: int, topic_id: int) -> list[Type[UserWord]]:
-        return self.session.query(UserWord).filter_by(user_id=user_id).join(UserWordTopic)\
+    def get_user_topic_words(self, user_id: int, topic_id: int) -> str | list[Type[UserWord]]:
+        try:
+            self.session.query(User).filter_by(id=user_id).one()
+        except exc.NoResultFound:
+            return f'User with user_id={user_id} was not found.'
+        try:
+            self.session.query(Topic).filter_by(id=topic_id).one()
+        except exc.NoResultFound:
+            return f'Topic with topic_id={topic_id} was not found.'
+        user_topic_words = self.session.query(UserWord).filter_by(user_id=user_id).join(UserWordTopic) \
             .filter_by(topic_id=topic_id).all()
+        if not user_topic_words:
+            return f'User with id={user_id} has no words in topic with id={topic_id}.'
+        return user_topic_words
 
     def delete_user_topic(self, user_id: int, topic_id: int) -> str | Type[Topic]:
         try:
-            user_topic = self.session.query(UserWordTopic).filter_by(topic_id=topic_id)\
+            user_topic = self.session.query(Topic).filter_by(id=topic_id).join(UserWordTopic) \
                 .join(UserWord).filter_by(user_id=user_id).one()
         except exc.NoResultFound:
             return f'User topic for user_id={user_id} and topic_id={topic_id} was not found.'
-        self.session.delete(user_topic)
+        other_user_uses_topic = bool(self.session.query(Topic).filter_by(id=topic_id).join(UserWordTopic)
+                                     .join(UserWord).filter(UserWord.user_id != user_id).first())
+        if not other_user_uses_topic:
+            self.session.delete(user_topic)
+            self.session.commit()
+            return user_topic
+        user_topic_words = self.session.query(UserWordTopic).filter_by(topic_id=topic_id) \
+            .join(UserWord).filter_by(user_id=user_id).all()
+        self.session.delete(user_topic_words)
         self.session.commit()
         return user_topic
 
     def update_user_topic(self, user_id: int, topic_id: int, topic_name: str) -> str | Type[Topic]:
-        try:
-            self.session.query(UserWordTopic).filter_by(topic_id=topic_id)\
-                .join(UserWord).filter_by(user_id=user_id).first()
-        except exc.NoResultFound:
-            return f'User with user_id={user_id} has no words in topic with topic_id={topic_id}'
-        try:
-            self.session.query(Topic).filter_by(id=topic_id).join(UserWordTopic)\
-                .join(UserWord).filter(UserWord.user_id != user_id).first()
-            other_user_uses_topic = True
-        except exc.NoResultFound:
-            other_user_uses_topic = False
+        user_topic_word = self.session.query(UserWordTopic).filter_by(topic_id=topic_id) \
+            .join(UserWord).filter_by(user_id=user_id).first()
+        if not user_topic_word:
+            return f'User with user_id={user_id} has no words in topic with topic_id={topic_id}.'
+        other_user_uses_topic = bool(self.session.query(Topic).filter_by(id=topic_id).join(UserWordTopic)
+                                     .join(UserWord).filter(UserWord.user_id != user_id).first())
         if other_user_uses_topic:
             db_topic = self.add_topic(topic_name)
             for user_word in self.get_user_topic_words(user_id, topic_id):
-                user_word.user_word_topic.topic_id = db_topic.id
+                user_word.user_word_topic[0].topic_id = db_topic.id
             self.session.commit()
             return db_topic
         db_topic = self.session.query(Topic).filter_by(id=topic_id).one()
