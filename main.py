@@ -15,7 +15,9 @@ app.include_router(routers.words)
 app.include_router(routers.user_topics)
 app.include_router(routers.admin_users)
 app.include_router(routers.admin_user_words)
+app.include_router(routers.admin_user_topics)
 app.include_router(routers.admin_words)
+app.include_router(routers.admin_topics)
 app.include_router(routers.security)
 
 # todo user activation mail

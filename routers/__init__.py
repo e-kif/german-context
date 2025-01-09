@@ -5,3 +5,5 @@ from .words import user_topics
 from .admins import admin_users
 from .admins import admin_words
 from .admins import admin_user_words
+from .admins import admin_user_topics
+from .admins import admin_topics

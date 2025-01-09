@@ -79,7 +79,6 @@ class Topic(Base):
     id = Column(Integer, Sequence('topic_id_seq'), primary_key=True)
     name = Column(String, unique=True)
 
-    users_words = relationship("UserWord", back_populates="topic")
     users_words_topics = relationship("UserWordTopic", cascade="all, delete", back_populates="topic")
 
     def __str__(self):
@@ -127,19 +126,17 @@ class UserWord(Base):
     id = Column(Integer, Sequence('users_word_id_seq'), primary_key=True)
     word_id = Column(Integer, ForeignKey('words.id', ondelete='CASCADE'), nullable=False)
     user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-    topic_id = Column(Integer, ForeignKey('topics.id', ondelete='CASCADE'), nullable=False)
     fails = Column(Integer, default=0)
     success = Column(Integer, default=0)
     last_shown = Column(DateTime)
 
     word = relationship("Word", back_populates="users_word")
     user = relationship("User", back_populates="users_words")
-    topic = relationship("Topic", back_populates="users_words")
     user_word_topic = relationship("UserWordTopic", cascade="all, delete-orphan", back_populates="user_word")
     custom_translation = relationship("UserWordTranslation", back_populates="user_word",
                                       uselist=False, cascade="all, delete")
     example = relationship("UserWordExample", back_populates="user_word", uselist=False, cascade="all, delete")
-    user_level = relationship("UserWordLevel", cascade="all, delete", back_populates="user_word")
+    user_level = relationship("UserWordLevel", cascade="all, delete", back_populates="user_word", uselist=False)
 
     def __str__(self):
         return (f'{self.id}. user={self.user.username}, word={self.word.word}: '

@@ -156,7 +156,7 @@ async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
 
 
 @user_topics.get('')
-def get_own_topics(current_user: Annotated[UserOut, Depends(get_current_active_user)]) -> list[TopicOut]:
+async def get_own_topics(current_user: Annotated[UserOut, Depends(get_current_active_user)]) -> list[TopicOut]:
     user_topics_list = db_manager.get_user_topics(current_user.id)
     if isinstance(user_topics_list, str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -165,7 +165,7 @@ def get_own_topics(current_user: Annotated[UserOut, Depends(get_current_active_u
 
 
 @user_topics.get('/{topic_id}')
-def get_own_topic_words(topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
+async def get_own_topic_words(topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
                         current_user: Annotated[UserOut, Depends(get_current_active_user)]) -> list[WordOut]:
     own_topic_words = db_manager.get_user_topic_words(current_user.id, topic_id)
     if isinstance(own_topic_words, str):
@@ -175,7 +175,7 @@ def get_own_topic_words(topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
 
 
 @user_topics.put('/{topic_id}')
-def update_own_topic_name(topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
+async def update_own_topic_name(topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
                           current_user: Annotated[UserOut, Depends(get_current_active_user)],
                           topic_name: str) -> TopicOut:
     updated_user_topic = db_manager.update_user_topic(current_user.id, topic_id, topic_name)
@@ -186,7 +186,7 @@ def update_own_topic_name(topic_id: Annotated[int, Path(title='Topic ID', ge=1)]
 
 
 @user_topics.delete('/{topic_id}')
-def remove_own_topic(topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
+async def remove_own_topic(topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
                      current_user: Annotated[UserOut, Depends(get_current_active_user)]) -> TopicOut:
     user_topic = db_manager.delete_user_topic(current_user.id, topic_id)
     if isinstance(user_topic, str):

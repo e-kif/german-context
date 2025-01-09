@@ -53,6 +53,27 @@ def user_out_admin(user: User) -> UserOutAdmin:
     return user
 
 
+def admin_wordlist_out_from_user_words(words: list[UserWord]) -> list[AdminUserWordOut]:
+    wordlist = []
+    for user_word in words:
+        admin_word = AdminUserWordOut(
+            id=user_word.id,
+            word_id=user_word.word_id,
+            word=user_word.word.word,
+            user_id=user_word.user_id,
+            topics=[user_topic.topic.name for user_topic in user_word.user_word_topic],
+            fails=user_word.fails,
+            success=user_word.success,
+            last_shown=user_word.last_shown,
+            custom_translation=user_word.custom_translation,
+            custom_level=user_word.user_level
+        )
+        if user_word.example:
+            admin_word.custom_example = user_word.example.example
+        wordlist.append(admin_word)
+    return wordlist
+
+
 if __name__ == '__main__':
     word = db_manager.get_user_words(6)[0]
     print(word_out_from_user_word(word))

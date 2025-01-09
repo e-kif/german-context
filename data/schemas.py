@@ -78,6 +78,20 @@ class AdminWordOut(AdminWord):
     users: list[int]
 
 
+class AdminUserWordOut(BaseModel):
+    id: int
+    word_id: int
+    word: str
+    user_id: int
+    topics: list[str]
+    fails: int
+    success: int
+    last_shown: datetime.datetime
+    custom_translation: str | None = None
+    custom_example: str | None = None
+    custom_level: Literal['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] | None = None
+
+
 class WordPatch(WordIn):
     word: str | None = None
 
