@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Path, Query, HTTPException, status, Depends
+from fastapi import APIRouter, Path, Query, Depends
 from typing import Annotated
 
 from data.schemas import (UserOut, UserOutAdmin, UserIn, UserPatchAdmin, UserInAdmin,
@@ -7,12 +7,12 @@ from data.database_manager import db_manager
 from modules.security import get_current_user, get_password_hash
 import modules.serialization as serialization
 from modules.word_info import get_word_info, get_word_info_from_search
+from modules.utils import check_for_exception, raise_exception
 
 
 def is_user_admin(current_user: Annotated[UserOut, Depends(get_current_user)]) -> bool:
     if not db_manager.check_user_role(current_user.id, 'Admin'):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail=f'User "{current_user.username}" is not an Admin. Not enough privileges.')
+        raise_exception(403, f'User "{current_user.username}" is not an Admin. Not enough privileges.')
     return True
 
 
@@ -40,9 +40,7 @@ async def add_user(user: UserInAdmin) -> UserOutAdmin:
         password=get_password_hash(user.password),
         level=user.level
     )
-    if isinstance(new_user, str):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=new_user)
+    check_for_exception(new_user, 409)
     db_manager.assign_user_role(new_user.id, user.role)
     return new_user
 
@@ -50,18 +48,14 @@ async def add_user(user: UserInAdmin) -> UserOutAdmin:
 @admin_users.get('/{user_id}')
 async def get_user(user_id: Annotated[int, Path(ge=1, title='User ID')]) -> UserOutAdmin:
     user = db_manager.get_user_by_id(user_id)
-    if isinstance(user, str):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=user)
+    check_for_exception(user, 404)
     return serialization.user_out_admin(user)
 
 
 @admin_users.delete('/{user_id}')
 async def remove_user(user_id: Annotated[int, Path(title='User ID', ge=1)]) -> UserOutAdmin:
     delete_user = db_manager.delete_user(user_id)
-    if isinstance(delete_user, str):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=delete_user)
+    check_for_exception(delete_user, 404)
     return serialization.user_out_admin(delete_user)
 
 
@@ -75,9 +69,7 @@ async def update_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
         password=get_password_hash(user.password),
         level=user.level
     )
-    if isinstance(updated_user, str):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=updated_user)
+    check_for_exception(updated_user, 404)
     return serialization.user_out_admin(updated_user)
 
 
@@ -85,9 +77,7 @@ async def update_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
 async def patch_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
                      user: UserPatchAdmin) -> UserOutAdmin:
     db_user = db_manager.get_user_by_id(user_id)
-    if isinstance(db_user, str):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=db_user)
+    check_for_exception(db_user, 404)
     stored_user_model = UserIn(**db_user.__dict__)
     update_data = user.model_dump(exclude_unset=True)
     updated_user = stored_user_model.model_copy(update=update_data)
@@ -106,9 +96,7 @@ async def get_user_word(
         user_word_id: Annotated[int, Path(title='UserWord ID', ge=1)]
 ) -> WordOut:
     db_word = db_manager.get_user_word_by_id(user_word_id)
-    if isinstance(db_word, str):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f'No user word with id={user_word_id} was found.')
+    check_for_exception(db_word, 404, f'No user word with id={user_word_id} was found.')
     return serialization.word_out_from_user_word(db_word)
 
 
@@ -116,9 +104,7 @@ async def get_user_word(
 async def add_user_word(user_id: Annotated[int, Path(title='User ID', ge=1)],
                         word: WordIn) -> WordOut:
     db_user = db_manager.get_user_by_id(user_id)
-    if isinstance(db_user, str):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=db_user)
+    check_for_exception(db_user, 404)
     parsed_word = get_word_info(word.word)
     custom_word = False
     if isinstance(parsed_word, str) and not all([word.english, word.level, word.word_type]):
@@ -126,10 +112,8 @@ async def add_user_word(user_id: Annotated[int, Path(title='User ID', ge=1)],
         if isinstance(searched_words, list) and searched_words:
             suggestions = '; '.join([f"{searched_word['word']} ({searched_word['word_type']})"
                                      for searched_word in searched_words])
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                detail=f'Word "{word.word}" was not found. Try one of these: ' + suggestions)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=parsed_word + " Provide following values: 'translation', 'level', 'word_type'.")
+            raise_exception(404, f'Word "{word.word}" was not found. Try one of these: ' + suggestions)
+        raise_exception(400, parsed_word + " Provide following values: 'translation', 'level', 'word_type'.")
     elif isinstance(parsed_word, str):
         parsed_word = dict(
             word=word.word,
@@ -143,8 +127,7 @@ async def add_user_word(user_id: Annotated[int, Path(title='User ID', ge=1)],
         custom_word = True
     the_word = parsed_word['word']
     if db_manager.user_has_word(db_user.id, the_word, parsed_word['word_type']):
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                            detail=f"User '{db_user.username}' already has word '{the_word}' "
+        raise_exception(409, f"User '{db_user.username}' already has word '{the_word}' "
                                    f"({parsed_word['word_type']}).")
     db_word = db_manager.get_word_by_word(the_word, parsed_word['word_type'])
     if isinstance(db_word, str):
@@ -168,11 +151,9 @@ async def add_user_word(user_id: Annotated[int, Path(title='User ID', ge=1)],
 async def remove_user_word(
         user_word_id: Annotated[int, Path(ge=1)]
 ) -> WordOut | None:
-    the_word = db_manager.get_user_word_by_id(user_word_id)
-    if isinstance(the_word, str):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=the_word)
-    serialized_word = serialization.word_out_from_user_word(the_word)
+    db_user_word = db_manager.get_user_word_by_id(user_word_id)
+    check_for_exception(db_user_word, 404)
+    serialized_word = serialization.word_out_from_user_word(db_user_word)
     db_manager.remove_user_word(user_word_id)
     return serialized_word
 
@@ -181,9 +162,7 @@ async def remove_user_word(
 async def patch_own_word(user_word_id: Annotated[int, Path(ge=1)],
                          word: WordPatch) -> WordOut:
     db_user_word = db_manager.get_user_word_by_id(user_word_id)
-    if isinstance(db_user_word, str):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=db_user_word)
+    check_for_exception(db_user_word, 404)
     stored_word_model = WordOut(**serialization.word_out_from_user_word(db_user_word).__dict__)
     update_data = word.model_dump(exclude_unset=True)
     updated_user_word = stored_word_model.model_copy(update=update_data)
@@ -197,9 +176,7 @@ async def patch_own_word(user_word_id: Annotated[int, Path(ge=1)],
         example=updated_user_word.example,
         example_translation=updated_user_word.example_translation
     )
-    if isinstance(updated_db_user_word, str):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=db_user_word)
+    check_for_exception(updated_db_user_word, 404)
     return serialization.word_out_from_user_word(updated_db_user_word)
 
 
@@ -207,9 +184,7 @@ async def patch_own_word(user_word_id: Annotated[int, Path(ge=1)],
 async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
                           word: WordIn) -> WordOut:
     db_user_word = db_manager.get_user_word_by_id(user_word_id)
-    if isinstance(db_user_word, str):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=db_user_word)
+    check_for_exception(db_user_word, 404)
     updated_db_user_word = db_manager.update_user_word(
         user_word_id=user_word_id,
         word=word.word,
@@ -233,22 +208,16 @@ async def get_words(limit: Annotated[int | None, Query(ge=0, title="Pagination L
 @admin_words.get('/{word_id}')
 async def get_word(word_id: Annotated[int, Path(title='Word ID', ge=1)]) -> AdminWordOut:
     db_word = db_manager.get_word_by_id(word_id)
-    if isinstance(db_word, str):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=db_word)
+    check_for_exception(db_word, 404)
     return serialization.admin_word_from_word(db_word)
 
 
 @admin_user_topics.get('/{user_id}')
 async def get_user_topics(user_id: Annotated[int, Path(title='User ID', ge=1)]) -> list[TopicOut]:
     db_user = db_manager.get_user_by_id(user_id)
-    if isinstance(db_user, str):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=db_user)
+    check_for_exception(db_user, 404)
     user_topics = db_manager.get_user_topics(user_id)
-    if isinstance(user_topics, str):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=user_topics)
+    check_for_exception(user_topics, 404)
     return user_topics
 
 
@@ -256,9 +225,7 @@ async def get_user_topics(user_id: Annotated[int, Path(title='User ID', ge=1)]) 
 async def get_user_topic_words(user_id: Annotated[int, Path(title='User ID', ge=1)],
                                topic_id: Annotated[int, Path(title='Topic ID', ge=1)]) -> list[AdminUserWordOut]:
     user_topic_words = db_manager.get_user_topic_words(user_id, topic_id)
-    if isinstance(user_topic_words, str):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=user_topic_words)
+    check_for_exception(user_topic_words, 404)
     return serialization.admin_wordlist_out_from_user_words(user_topic_words)
 
 
@@ -267,9 +234,7 @@ async def update_user_topic(user_id: Annotated[int, Path(title='User ID', ge=1)]
                             topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
                             topic_name: str) -> TopicOut:
     user_topic = db_manager.update_user_topic(user_id, topic_id, topic_name)
-    if isinstance(user_topic, str):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=user_topic)
+    check_for_exception(user_topic, 404)
     return user_topic
 
 
@@ -277,7 +242,5 @@ async def update_user_topic(user_id: Annotated[int, Path(title='User ID', ge=1)]
 async def remove_user_topic(user_id: Annotated[int, Path(title='User ID', ge=1)],
                             topic_id: Annotated[int, Path(title='Topic ID', ge=1)]) -> TopicOut:
     user_topic = db_manager.delete_user_topic(user_id, topic_id)
-    if isinstance(user_topic, str):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=user_topic)
+    check_for_exception(user_topic, 404)
     return user_topic
