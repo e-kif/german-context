@@ -235,7 +235,7 @@ def get_words_suggestion(letters: str, page_start: int = 1, pages: int = 1):
                      'level': level,
                      'word_type': word_type,
                      'english': english.text.replace('\n', '').replace('\xa0', '').replace(',', ', '),
-                     # 'url': href
+                     'url': href
                      }
         words.append(word_info)
     return words

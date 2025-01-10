@@ -6,7 +6,7 @@ from data.schemas import (UserOut, UserOutAdmin, UserIn, UserPatchAdmin, UserInA
 from data.database_manager import db_manager
 from modules.security import get_current_user, get_password_hash
 import modules.serialization as serialization
-from modules.word_info import get_word_info, get_word_info_from_search
+from modules.word_info import get_word_info, get_word_info_from_search, get_words_suggestion
 from modules.utils import check_for_exception, raise_exception
 
 
@@ -203,6 +203,15 @@ async def get_words(limit: Annotated[int | None, Query(ge=0, title="Pagination L
                     skip: Annotated[int, Query(ge=0, title='Pagination page offset')] = 0) -> list[AdminWordOut]:
     words = db_manager.get_words(limit=limit, skip=skip)
     return serialization.admin_wordlist_from_words(words)
+
+
+@admin_words.get('/suggest')
+async def suggest_word_by_letter_combination(
+        letter_combination: Annotated[str, Query(min_length=3)],
+        page_start: Annotated[int, Query(ge=1)] = 1,
+        pages: Annotated[int, Query(ge=1)] = 1
+) -> list[dict] | str:
+    return get_words_suggestion(letter_combination, page_start, pages)
 
 
 @admin_words.get('/{word_id}')

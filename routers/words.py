@@ -27,7 +27,10 @@ async def suggest_words_by_letter_combination(
         page_start: Annotated[int, Query(title='Page number', description='Pagination parameter', ge=1)] = 1,
         pages: Annotated[int, Query(title='Amount of pages', description='Pagination parameter', ge=1)] = 1
 ) -> list[dict] | str:
-    return get_words_suggestion(letter_combination, page_start, pages)
+    suggest_words = get_words_suggestion(letter_combination, page_start, pages)
+    for word in suggest_words:
+        del word['url']
+    return suggest_words
 
 
 @words.get('/{user_word_id}')
