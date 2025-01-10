@@ -21,7 +21,6 @@ app.include_router(routers.admin_topics)
 app.include_router(routers.security)
 
 # todo user activation mail
-# todo topics endpoints
 # todo search words by syllables endpoint
 # todo show cards logic
 # todo paginations

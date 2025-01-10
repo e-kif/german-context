@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, Path
+from fastapi import APIRouter, Depends, Path, Query
 from typing import Annotated
 
 from data.schemas import UserOut, WordOut, WordIn, WordPatch, TopicOut
 from data.database_manager import db_manager
 from modules.security import get_current_active_user
-from modules.word_info import get_word_info_from_search, get_word_info
+from modules.word_info import get_word_info_from_search, get_word_info, get_words_suggestion
 import modules.serialization as serialization
 from modules.utils import check_for_exception, raise_exception
 
@@ -18,6 +18,16 @@ async def read_own_words(
 ) -> list[WordOut]:
     db_users_words = db_manager.get_user_words(current_user.id)
     return serialization.word_out_list_from_user_words(db_users_words)
+
+
+@words.get('/suggest')
+async def suggest_words_by_letter_combination(
+        current_user: Annotated[UserOut, Depends(get_current_active_user)],
+        letter_combination: Annotated[str, Query(title='Combination of letters', min_length=3)],
+        page_start: Annotated[int, Query(title='Page number', description='Pagination parameter', ge=1)] = 1,
+        pages: Annotated[int, Query(title='Amount of pages', description='Pagination parameter', ge=1)] = 1
+) -> list[dict] | str:
+    return get_words_suggestion(letter_combination, page_start, pages)
 
 
 @words.get('/{user_word_id}')

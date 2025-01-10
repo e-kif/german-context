@@ -194,6 +194,53 @@ def get_word_info_from_search(
     return word_info
 
 
+def get_words_suggestion(letters: str, page_start: int = 1, pages: int = 1):
+    base_url = 'https://www.woerter.net'
+    base_search_url = base_url + '/search'
+    search_url = base_search_url + '?w='
+
+    response_text = ''
+    for page_number in range(pages):
+        try:
+            response = requests.get(f'{search_url}{letters}&p={page_start + page_number}')
+        except requests.exceptions.ConnectionError:
+            print(f'Connection problem for page={page_start + page_number}')
+            continue
+        response_text += response.text
+
+    if not response_text:
+        return 'Connection problem. Try again later.'
+    # response = requests.get(search_url + letters)
+    soup = BeautifulSoup(response_text, 'html.parser')
+
+    word_cards = soup.find_all('div', attrs={'class': 'bTrf rClear'})
+    words = []
+    for word_card in word_cards:
+        word_container = word_card.find('div', attrs={'class': 'rU6px rO0px'})
+        word = word_container.find('q').text.replace('\n', '')
+        href = base_url + word_container.find('a').get('href')
+        english = word_card.find('span', attrs={'lang': 'en'})
+        if not english:
+            print(f'word {word} ({href}) has no translation.')
+            continue
+        info_strip = word_card.find('p', attrs={'class': 'rInf rKln r1Zeile rU3px rO0px'})
+        level = info_strip.find('span')
+        if 'Vocabulary' in level.attrs['title']:
+            level = level.text.strip()
+            word_type = info_strip.find_all('span')[1].text.strip().capitalize()
+        else:
+            level = 'Unknown'
+            word_type = info_strip.find('span').text.strip().capitalize()
+        word_info = {'word': word,
+                     'level': level,
+                     'word_type': word_type,
+                     'english': english.text.replace('\n', '').replace('\xa0', '').replace(',', ', '),
+                     # 'url': href
+                     }
+        words.append(word_info)
+    return words
+
+
 if __name__ == '__main__':
     # print(get_word_info('schreiben'))
     # print(get_word_info('weiss'))
@@ -204,4 +251,6 @@ if __name__ == '__main__':
     # print(get_word_info('das fahren'))
     # print(get_word_info('jogurt'))
     # print(get_wordlist_from_word_search('die'))
-    print(get_word_info('radiergu'))
+    suggestions = get_words_suggestion('die', page_start=2, pages=2)
+    print(f'{suggestions=}')
+    print(f'{len(suggestions)=}')
