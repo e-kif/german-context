@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Path, Query
 from typing import Annotated
 
-from data.schemas import UserOut, WordOut, WordIn, WordPatch, TopicOut
+from data.schemas import UserOut, WordOut, UserWordIn, WordPatch, TopicOut
 from data.database_manager import db_manager
 from modules.security import get_current_active_user
 from modules.word_info import get_word_info_from_search, get_word_info, get_words_suggestion
@@ -48,7 +48,7 @@ async def get_own_word(
 @words.post('')
 async def add_user_word(
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
-        word: WordIn
+        word: UserWordIn
 ) -> WordOut:
     parsed_word = get_word_info(word.word)
     custom_word = False
@@ -134,7 +134,7 @@ async def patch_own_word(user_word_id: Annotated[int, Path(ge=1)],
 @words.put('/{user_word_id}')
 async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
                           current_user: Annotated[UserOut, Depends(get_current_active_user)],
-                          word: WordIn) -> WordOut:
+                          word: UserWordIn) -> WordOut:
     db_user_word = db_manager.get_user_word_by_id(user_word_id)
     check_for_exception(db_user_word, 404)
     if db_user_word.user_id != current_user.id:

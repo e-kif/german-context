@@ -7,7 +7,6 @@ from sqlalchemy import URL, create_engine, exc, text
 from sqlalchemy.orm import sessionmaker
 
 from data.models import *
-from data.models import Topic
 from modules.word_info import get_word_info_from_search
 
 
@@ -205,6 +204,28 @@ class DataManager:
             return db_word
         self.session.delete(db_word)
         self.session.commit()
+        return db_word
+
+    def update_word(self,
+                    word_id,
+                    word: str,
+                    word_type: str,
+                    english: str,
+                    level: str,
+                    example: str | None = None,
+                    example_translation: str | None = None) -> str | Type[Word]:
+        db_word = self.get_word_by_id(word_id)
+        if isinstance(db_word, str):
+            return db_word
+        db_word.word = word
+        db_word.word_type = self.add_word_type(word_type).id
+        db_word.english = english
+        db_word.level = level
+        if example:
+            db_word.example.example = example
+            db_word.example.translation = example_translation
+        self.session.commit()
+        self.session.refresh(db_word)
         return db_word
 
     def get_word_by_word(self, word: str, word_type: str) -> Type[Word] | str:

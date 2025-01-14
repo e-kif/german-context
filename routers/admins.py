@@ -2,7 +2,7 @@ from fastapi import APIRouter, Path, Query, Depends
 from typing import Annotated
 
 from data.schemas import (UserOut, UserOutAdmin, UserIn, UserPatchAdmin, UserInAdmin,
-                          WordOut, WordIn, WordPatch, AdminWordOut, TopicOut, AdminUserWordOut, AdminWord)
+                          WordOut, WordIn, UserWordIn, WordPatch, AdminWordOut, TopicOut, AdminUserWordOut, AdminWord)
 from data.database_manager import db_manager
 from modules.security import get_current_user, get_password_hash
 import modules.serialization as serialization
@@ -102,7 +102,7 @@ async def get_user_word(
 
 @admin_user_words.post('/{user_id}')
 async def add_user_word(user_id: Annotated[int, Path(title='User ID', ge=1)],
-                        word: WordIn) -> WordOut:
+                        word: UserWordIn) -> WordOut:
     db_user = db_manager.get_user_by_id(user_id)
     check_for_exception(db_user, 404)
     parsed_word = get_word_info(word.word)
@@ -182,7 +182,7 @@ async def patch_own_word(user_word_id: Annotated[int, Path(ge=1)],
 
 @admin_user_words.put('/words/{user_word_id}')
 async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
-                          word: WordIn) -> WordOut:
+                          word: UserWordIn) -> WordOut:
     db_user_word = db_manager.get_user_word_by_id(user_word_id)
     check_for_exception(db_user_word, 404)
     updated_db_user_word = db_manager.update_user_word(
@@ -244,6 +244,22 @@ async def delete_word(word_id: Annotated[int, Path(title='Word ID', ge=1)]) -> A
     word_out = serialization.admin_word_out_from_db_word(db_word)
     db_manager.delete_word(word_id)
     return word_out
+
+
+@admin_words.put('/{word_id}')
+async def update_word(word_id: Annotated[int, Path(title='Word ID', ge=1)],
+                      word: WordIn) -> AdminWordOut:
+    db_word = db_manager.get_word_by_id(word_id)
+    check_for_exception(db_word, 404)
+    updated_word = db_manager.update_word(
+        word=word.word,
+        word_type=word.word_type,
+        english=word.english,
+        level=word.level,
+        example=word.example,
+        example_translation=word.example_translation
+    )
+    return serialization.admin_word_out_from_db_word(updated_word)
 
 
 @admin_user_topics.get('/{user_id}')
