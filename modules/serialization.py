@@ -74,6 +74,19 @@ def admin_wordlist_out_from_user_words(words: list[UserWord]) -> list[AdminUserW
     return wordlist
 
 
+def admin_word_out_from_db_word(db_word: Word) -> AdminWord:
+    word_out = AdminWord(
+        id=db_word.id,
+        word=db_word.word,
+        word_type=db_word.word_type.name,
+        english=db_word.english,
+        level=db_word.level,
+        example=db_word.example.example,
+        example_translation=db_word.example.translation
+    )
+    return word_out
+
+
 if __name__ == '__main__':
     word = db_manager.get_user_words(6)[0]
     print(word_out_from_user_word(word))

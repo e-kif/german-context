@@ -2,7 +2,7 @@ from fastapi import APIRouter, Path, Query, Depends
 from typing import Annotated
 
 from data.schemas import (UserOut, UserOutAdmin, UserIn, UserPatchAdmin, UserInAdmin,
-                          WordOut, WordIn, WordPatch, AdminWordOut, TopicOut, AdminUserWordOut)
+                          WordOut, WordIn, WordPatch, AdminWordOut, TopicOut, AdminUserWordOut, AdminWord)
 from data.database_manager import db_manager
 from modules.security import get_current_user, get_password_hash
 import modules.serialization as serialization
@@ -128,7 +128,7 @@ async def add_user_word(user_id: Annotated[int, Path(title='User ID', ge=1)],
     the_word = parsed_word['word']
     if db_manager.user_has_word(db_user.id, the_word, parsed_word['word_type']):
         raise_exception(409, f"User '{db_user.username}' already has word '{the_word}' "
-                                   f"({parsed_word['word_type']}).")
+                             f"({parsed_word['word_type']}).")
     db_word = db_manager.get_word_by_word(the_word, parsed_word['word_type'])
     if isinstance(db_word, str):
         db_user_word = db_manager.add_user_word(user_id=db_user.id,
@@ -219,6 +219,23 @@ async def get_word(word_id: Annotated[int, Path(title='Word ID', ge=1)]) -> Admi
     db_word = db_manager.get_word_by_id(word_id)
     check_for_exception(db_word, 404)
     return serialization.admin_word_from_word(db_word)
+
+
+@admin_words.post('')
+async def add_word(word: WordIn) -> AdminWord:
+    db_word = db_manager.get_word_by_word(word.word, word.word_type)
+    if not isinstance(db_word, str):
+        raise_exception(409, f'Word {db_word.word} ({db_word.word_type} already exists.')
+    parsed_word = get_word_info(word.word)
+    if isinstance(parsed_word, str) and all([word.word_type, word.english, word.level]):
+        db_word = db_manager.add_new_word(word)
+        return serialization.admin_word_out_from_db_word(db_word)
+    check_for_exception(parsed_word, 404)
+    print(f'{type(parsed_word)=}')
+    db_word = db_manager.add_new_word(parsed_word)
+    if parsed_word.get('example'):
+        db_manager.add_word_example(db_word.id, parsed_word['example'][0], parsed_word['example'][1])
+    return serialization.admin_word_out_from_db_word(db_word)
 
 
 @admin_user_topics.get('/{user_id}')
