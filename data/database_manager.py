@@ -199,6 +199,14 @@ class DataManager:
             db_word = f'Word with id={word_id} was not found.'
         return db_word
 
+    def delete_word(self, word_id: int) -> str | Type[Word]:
+        db_word = self.get_word_by_id(word_id)
+        if isinstance(db_word, str):
+            return db_word
+        self.session.delete(db_word)
+        self.session.commit()
+        return db_word
+
     def get_word_by_word(self, word: str, word_type: str) -> Type[Word] | str:
         try:
             db_word = (self.session.query(Word).join(WordType)

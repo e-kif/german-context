@@ -231,11 +231,19 @@ async def add_word(word: WordIn) -> AdminWord:
         db_word = db_manager.add_new_word(word)
         return serialization.admin_word_out_from_db_word(db_word)
     check_for_exception(parsed_word, 404)
-    print(f'{type(parsed_word)=}')
     db_word = db_manager.add_new_word(parsed_word)
     if parsed_word.get('example'):
         db_manager.add_word_example(db_word.id, parsed_word['example'][0], parsed_word['example'][1])
     return serialization.admin_word_out_from_db_word(db_word)
+
+
+@admin_words.delete('/{word_id}')
+async def delete_word(word_id: Annotated[int, Path(title='Word ID', ge=1)]) -> AdminWord:
+    db_word = db_manager.get_word_by_id(word_id)
+    check_for_exception(db_word, 404)
+    word_out = serialization.admin_word_out_from_db_word(db_word)
+    db_manager.delete_word(word_id)
+    return word_out
 
 
 @admin_user_topics.get('/{user_id}')

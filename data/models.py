@@ -62,9 +62,9 @@ class Word(Base):
     __table_args__ = UniqueConstraint('word', 'word_type_id', name='_unique_word'),
 
     word_type = relationship("WordType", back_populates="words")
-    users_word = relationship("UserWord", back_populates="word")
-    example = relationship("WordExample", back_populates="word", uselist=False)
-    non_parsed_word = relationship("NonParsedWord", back_populates="word", uselist=False)
+    users_word = relationship("UserWord", back_populates="word", cascade="all, delete")
+    example = relationship("WordExample", back_populates="word", uselist=False, cascade="all, delete")
+    non_parsed_word = relationship("NonParsedWord", back_populates="word", uselist=False, cascade="all, delete")
 
     def __str__(self):
         return f'{self.id}. {self.word} ({self.level}) - {self.english}'
