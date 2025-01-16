@@ -1,20 +1,15 @@
 from fastapi import APIRouter, Path, Query, Depends
 from typing import Annotated
 
-from data.schemas import (UserOut, UserOutAdmin, UserIn, UserPatchAdmin, UserInAdmin,
-                          WordOut, WordIn, UserWordIn, WordPatch, AdminWordOut, TopicOut, AdminUserWordOut, AdminWord)
+from data.schemas import (UserOutAdmin, UserIn, UserPatchAdmin, UserInAdmin,
+                          WordOut, WordIn, UserWordIn, UserWordPatch, WordPatch, AdminWordOut,
+                          TopicOut, AdminUserWordOut,
+                          AdminWord)
 from data.database_manager import db_manager
-from modules.security import get_current_user, get_password_hash
+from modules.security import get_password_hash, is_user_admin
 import modules.serialization as serialization
 from modules.word_info import get_word_info, get_word_info_from_search, get_words_suggestion
 from modules.utils import check_for_exception, raise_exception
-
-
-def is_user_admin(current_user: Annotated[UserOut, Depends(get_current_user)]) -> bool:
-    if not db_manager.check_user_role(current_user.id, 'Admin'):
-        raise_exception(403, f'User "{current_user.username}" is not an Admin. Not enough privileges.')
-    return True
-
 
 admin_users = APIRouter(prefix='/admin/users', dependencies=[Depends(is_user_admin)], tags=['admin_users'])
 admin_words = APIRouter(prefix='/admin/words', dependencies=[Depends(is_user_admin)], tags=['admin_words'])
@@ -160,7 +155,7 @@ async def remove_user_word(
 
 @admin_user_words.patch('/words/{user_word_id}')
 async def patch_own_word(user_word_id: Annotated[int, Path(ge=1)],
-                         word: WordPatch) -> WordOut:
+                         word: UserWordPatch) -> WordOut:
     db_user_word = db_manager.get_user_word_by_id(user_word_id)
     check_for_exception(db_user_word, 404)
     stored_word_model = WordOut(**serialization.word_out_from_user_word(db_user_word).__dict__)
@@ -260,6 +255,28 @@ async def update_word(word_id: Annotated[int, Path(title='Word ID', ge=1)],
         example_translation=word.example_translation
     )
     return serialization.admin_word_out_from_db_word(updated_word)
+
+
+@admin_words.patch('/{user_word_id}')
+async def patch_word(word_id: Annotated[int, Path(ge=1)],
+                     word: WordPatch) -> AdminWordOut:
+    db_word = db_manager.get_word_by_id(word_id)
+    check_for_exception(db_word, 404)
+    stored_word_model = WordOut(**serialization.word_out_from_user_word(db_word).__dict__)
+    update_data = word.model_dump(exclude_unset=True)
+    updated_word = stored_word_model.model_copy(update=update_data)
+    updated_db_word = db_manager.update_word(
+        user_word_id=word_id,
+        word=updated_word.word,
+        word_type=updated_word.word_type,
+        english=updated_word.english,
+        level=updated_word.level,
+        topics=updated_word.topics,
+        example=updated_word.example,
+        example_translation=updated_word.example_translation
+    )
+    check_for_exception(updated_db_word, 404)
+    return serialization.word_out_from_user_word(updated_db_word)
 
 
 @admin_user_topics.get('/{user_id}')

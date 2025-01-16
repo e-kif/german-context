@@ -11,6 +11,7 @@ import os
 
 from data.database_manager import db_manager
 from data.schemas import UserIn, UserOut
+from modules.utils import raise_exception
 
 load_dotenv()
 SECRET_KEY = os.getenv('OLD_SECRET_KEY')
@@ -140,6 +141,13 @@ async def decode_refresh_token(token: str, key: str, token_type: str) -> str:
         return payload[key]
     except jwt.PyJWTError as e:
         print(f'Token decoding error: {e}')
+
+
+def is_user_admin(current_user: Annotated[UserOut, Depends(get_current_user)]) -> bool:
+    if not db_manager.check_user_role(current_user.id, 'Admin'):
+        raise_exception(403, f'User "{current_user.username}" is not an Admin. Not enough privileges.')
+    return True
+
 
 if __name__ == '__main__':
     print(authenticate_user('string', 'string'))

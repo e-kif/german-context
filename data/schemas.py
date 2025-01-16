@@ -64,6 +64,10 @@ class UserWordIn(WordIn):
     topics: list[str] | None = None
 
 
+class UserWordPatch(UserWordIn):
+    word: str | None = None
+
+
 class AdminWord(WordBase):
     id: int
     word_type: str
