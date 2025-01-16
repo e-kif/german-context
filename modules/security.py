@@ -42,8 +42,11 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def get_user(username: str) -> UserIn | str:
-    return db_manager.get_user_by_username(username)
+def get_user(username: str) -> UserIn | None:
+    db_user = db_manager.get_user_by_username(username)
+    if isinstance(db_user, str):
+        return None
+    return db_user
 
 
 def authenticate_user(username: str, password: str):
