@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Path, Query
-from typing import Annotated
+from typing import Annotated, Literal
 
 from data.schemas import UserOut, WordOut, UserWordIn, WordPatch, TopicOut
 from data.database_manager import db_manager
@@ -16,10 +16,12 @@ user_topics = APIRouter(prefix='/users/me/topics', tags=['user_topics'])
 async def read_own_words(
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
         limit: Annotated[int, Query(title='words limit', description='words per request', ge=1, le=100)] = 25,
-        skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0
+        skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0,
+        sort_by: Annotated[Literal['id', 'level', 'word', 'word_type', 'english', 'example'],
+                           Query(description='sorting parameter')] = 'id'
 ) -> list[WordOut]:
     db_users_words = db_manager.get_user_words(current_user.id, limit, skip)
-    return serialization.word_out_list_from_user_words(db_users_words)
+    return serialization.word_out_list_from_user_words(db_users_words, sort_by)
 
 
 @words.get('/suggest')
@@ -160,9 +162,10 @@ async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
 async def get_own_topics(
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
         limit: Annotated[int, Query(title='words limit', description='topics per request', ge=1, le=100)] = 25,
-        skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0
+        skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0,
+        sort_by: Annotated[Literal['id', 'name'], Query(description='sorting parameter')] = 'id'
 ) -> list[TopicOut]:
-    user_topics_list = db_manager.get_user_topics(current_user.id, limit, skip)
+    user_topics_list = db_manager.get_user_topics(current_user.id, limit, skip, sort_by)
     check_for_exception(user_topics_list, 404)
     return user_topics_list
 
@@ -172,11 +175,13 @@ async def get_own_topic_words(
         topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
         limit: Annotated[int, Query(title='words limit', description='words per request', ge=1, le=100)] = 25,
-        skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0
+        skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0,
+        sort_by: Annotated[Literal['id', 'word', 'word_type', 'level', 'english', 'example'],
+                           Query(description='sorting parameter')] = 'id'
 ) -> list[WordOut]:
     own_topic_words = db_manager.get_user_topic_words(current_user.id, topic_id, limit, skip)
     check_for_exception(own_topic_words, 404)
-    return serialization.word_out_list_from_user_words(own_topic_words)
+    return serialization.word_out_list_from_user_words(own_topic_words, sort_by)
 
 
 @user_topics.put('/{topic_id}')

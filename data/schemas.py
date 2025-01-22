@@ -39,7 +39,7 @@ class UserPatch(BaseModel):
     username: str | None = None
     email: EmailStr | None = None
     password: str | None = None
-    level: Literal['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] | None = None
+    level: Literal['A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'Unknown'] | None = None
 
 
 class UserPatchAdmin(UserPatch):
@@ -54,7 +54,7 @@ class WordIn(WordBase):
     english: str | None = None
     example: str | None = None
     example_translation: str | None = None
-    level: Literal['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] | None = None
+    level: Literal['A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'Unknown'] | None = None
     word_type: Literal['Noun', 'Verb', 'Adjective',
                        'Pronoun', 'Preposition', 'Conjunction',
                        'Adverb', 'Article', 'Particle'] | None = None
@@ -96,7 +96,7 @@ class AdminUserWordOut(BaseModel):
     last_shown: datetime.datetime
     custom_translation: str | None = None
     custom_example: str | None = None
-    custom_level: Literal['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] | None = None
+    custom_level: Literal['A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'Unknown'] | None = None
 
 
 class WordPatch(WordIn):

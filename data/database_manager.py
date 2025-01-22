@@ -227,7 +227,7 @@ class DataManager:
         if isinstance(db_word, str):
             return db_word
         db_word.word = word
-        db_word.word_type = self.add_word_type(word_type).id
+        db_word.word_type_id = self.add_word_type(word_type).id
         db_word.english = english
         db_word.level = level
         if example:
@@ -475,13 +475,14 @@ class DataManager:
             db_user_word = f'No user word with id={user_word_id} was found.'
         return db_user_word
 
-    def get_user_topics(self, user_id: int, limit: int = 25, skip: int = 0) -> str | list[Type[Topic]]:
+    def get_user_topics(self, user_id: int, limit: int = 25, skip: int = 0, sort_by: str = 'id'
+                        ) -> str | list[Type[Topic]]:
         try:
             self.session.query(User).filter_by(id=user_id).one()
         except exc.NoResultFound:
             return f'User with user_id={user_id} was not found.'
         user_topics = self.session.query(Topic).join(UserWordTopic).join(UserWord).join(User) \
-            .filter_by(id=user_id).order_by(Topic.id).slice(limit * skip, limit * (skip + 1)).all()
+            .filter_by(id=user_id).order_by(sort_by).slice(limit * skip, limit * (skip + 1)).all()
         return user_topics
 
     def get_user_topic_words(self,

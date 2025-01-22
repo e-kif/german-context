@@ -15,9 +15,9 @@ async def home():
     return {'message': 'Welcome to the German-Context App!'}
 
 
-@users.get('')
-async def get_users() -> list[UserOut]:
-    return db_manager.get_users()
+# @users.get('')
+# async def get_users() -> list[UserOut]:
+#     return db_manager.get_users()
 
 
 @users.post('')

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Path, Query, Depends
-from typing import Annotated
+from typing import Annotated, Literal
 
 from data.schemas import (UserOutAdmin, UserIn, UserPatchAdmin, UserInAdmin,
                           WordOut, WordIn, UserWordIn, UserWordPatch, WordPatch, AdminWordOut,
@@ -23,11 +23,13 @@ admin_topics = APIRouter(prefix='/admin_topics', dependencies=[Depends(is_user_a
 @admin_users.get('')
 async def get_users(
         limit: Annotated[int, Query(title='users limit', description='users per request', ge=1, le=100)] = 25,
-        skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0
+        skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0,
+        sort_by: Literal['id', 'username', 'email', 'level', 'login_attempts',
+                         'last_login', 'created_at', 'streak', 'role'] = 'id'
 ) -> list[UserOutAdmin]:
     users = db_manager.get_users(limit, skip)
     users_out = [serialization.user_out_admin(user) for user in users]
-    return users_out
+    return sorted(users_out, key=lambda user: user.__dict__.get(sort_by))
 
 
 @admin_users.post('/add')
@@ -92,10 +94,11 @@ async def patch_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
 async def get_user_words(
         user_id: Annotated[int, Path(title='User ID', ge=1)],
         limit: Annotated[int, Query(title='words limit', description='words per request', ge=1, le=100)] = 25,
-        skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0
+        skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0,
+        sort_by: Literal['id', 'word', 'word_type', 'level', 'english', 'example'] = 'id'
 ) -> list[WordOut]:
     user_words = db_manager.get_user_words(user_id, limit, skip)
-    return serialization.word_out_list_from_user_words(user_words)
+    return serialization.word_out_list_from_user_words(user_words, sort_by)
 
 
 @admin_user_words.get('/words/{user_word_id}')
@@ -207,9 +210,11 @@ async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
 
 @admin_words.get('')
 async def get_words(limit: Annotated[int, Query(ge=1, le=500, title='Pagination Limit')] = 50,
-                    skip: Annotated[int, Query(ge=0, title='Pagination page offset')] = 0) -> list[AdminWordOut]:
+                    skip: Annotated[int, Query(ge=0, title='Pagination page offset')] = 0,
+                    sort_by: Literal['id', 'word', 'word_type', 'level', 'users', 'english', 'example'] = 'id'
+) -> list[AdminWordOut]:
     words = db_manager.get_words(limit, skip)
-    return serialization.admin_wordlist_from_words(words)
+    return serialization.admin_wordlist_from_words(words, sort_by)
 
 
 @admin_words.get('/suggest')
@@ -271,37 +276,37 @@ async def update_word(word_id: Annotated[int, Path(title='Word ID', ge=1)],
     return serialization.admin_word_out_from_db_word(updated_word)
 
 
-@admin_words.patch('/{user_word_id}')
+@admin_words.patch('/{word_id}')
 async def patch_word(word_id: Annotated[int, Path(ge=1)],
                      word: WordPatch) -> AdminWordOut:
     db_word = db_manager.get_word_by_id(word_id)
     check_for_exception(db_word, 404)
-    stored_word_model = WordOut(**serialization.word_out_from_user_word(db_word).__dict__)
+    stored_word_model = AdminWordOut(**serialization.admin_word_from_word(db_word).__dict__)
     update_data = word.model_dump(exclude_unset=True)
     updated_word = stored_word_model.model_copy(update=update_data)
     updated_db_word = db_manager.update_word(
-        user_word_id=word_id,
+        word_id=word_id,
         word=updated_word.word,
         word_type=updated_word.word_type,
         english=updated_word.english,
         level=updated_word.level,
-        topics=updated_word.topics,
         example=updated_word.example,
         example_translation=updated_word.example_translation
     )
     check_for_exception(updated_db_word, 404)
-    return serialization.word_out_from_user_word(updated_db_word)
+    return serialization.admin_word_from_word(updated_db_word)
 
 
 @admin_user_topics.get('/{user_id}')
 async def get_user_topics(
         user_id: Annotated[int, Path(title='User ID', ge=1)],
         limit: Annotated[int, Query(title='topics limit', description='topics per request', ge=1, le=100)] = 25,
-        skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0
+        skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0,
+        sort_by: Literal['id', 'name'] = 'id'
 ) -> list[TopicOut]:
     db_user = db_manager.get_user_by_id(user_id)
     check_for_exception(db_user, 404)
-    user_topics = db_manager.get_user_topics(user_id, limit, skip)
+    user_topics = db_manager.get_user_topics(user_id, limit, skip, sort_by)
     check_for_exception(user_topics, 404)
     return user_topics
 
@@ -311,11 +316,12 @@ async def get_user_topic_words(
         user_id: Annotated[int, Path(title='User ID', ge=1)],
         topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
         limit: Annotated[int, Query(title='words limit', description='words per request', ge=1, le=100)] = 25,
-        skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0
+        skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0,
+        sort_by: Literal['id', 'word_id', 'word', 'fails', 'success', 'last_shown'] = 'id'
 ) -> list[AdminUserWordOut]:
     user_topic_words = db_manager.get_user_topic_words(user_id, topic_id, limit, skip)
     check_for_exception(user_topic_words, 404)
-    return serialization.admin_wordlist_out_from_user_words(user_topic_words)
+    return serialization.admin_wordlist_out_from_user_words(user_topic_words, sort_by)
 
 
 @admin_user_topics.put('/{user_id}/{topic_id}')

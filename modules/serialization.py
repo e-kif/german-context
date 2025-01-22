@@ -23,8 +23,9 @@ def word_out_from_user_word(user_word: UserWord) -> WordOut:
     return word_out
 
 
-def word_out_list_from_user_words(user_words: list[UserWord]) -> list[WordOut]:
-    return [word_out_from_user_word(user_word) for user_word in user_words]
+def word_out_list_from_user_words(user_words: list[UserWord], sort_by) -> list[WordOut]:
+    word_list = [word_out_from_user_word(user_word) for user_word in user_words]
+    return sorted(word_list, key=lambda w: w.dict().get(sort_by))
 
 
 def admin_word_from_word(db_word: Word) -> AdminWordOut:
@@ -42,10 +43,11 @@ def admin_word_from_word(db_word: Word) -> AdminWordOut:
     return admin_word_out
 
 
-def admin_wordlist_from_words(words: list[Word]) -> list[AdminWordOut]:
+def admin_wordlist_from_words(words: list[Word], sort_by: str) -> list[AdminWordOut]:
     if not words:
         return []
-    return [admin_word_from_word(admin_word) for admin_word in words]
+    return sorted([admin_word_from_word(admin_word) for admin_word in words],
+                  key=lambda word: word.__dict__.get(sort_by))
 
 
 def user_out_admin(user: User) -> UserOutAdmin:
@@ -53,7 +55,7 @@ def user_out_admin(user: User) -> UserOutAdmin:
     return user
 
 
-def admin_wordlist_out_from_user_words(words: list[UserWord]) -> list[AdminUserWordOut]:
+def admin_wordlist_out_from_user_words(words: list[UserWord], sort_by: str) -> list[AdminUserWordOut]:
     wordlist = []
     for user_word in words:
         admin_word = AdminUserWordOut(
@@ -71,7 +73,7 @@ def admin_wordlist_out_from_user_words(words: list[UserWord]) -> list[AdminUserW
         if user_word.example:
             admin_word.custom_example = user_word.example.example
         wordlist.append(admin_word)
-    return wordlist
+    return sorted(wordlist, key=lambda word:word.__dict__.get(sort_by))
 
 
 def admin_word_out_from_db_word(db_word: Word) -> AdminWord:
@@ -88,5 +90,7 @@ def admin_word_out_from_db_word(db_word: Word) -> AdminWord:
 
 
 if __name__ == '__main__':
-    word = db_manager.get_user_words(6)[0]
-    print(word_out_from_user_word(word))
+    # word = db_manager.get_user_words(6)[0]
+    # print(word_out_from_user_word(word))
+    u_words = word_out_list_from_user_words(db_manager.get_user_words(6), 'word_type')
+    [print(u_wo) for u_wo in u_words]

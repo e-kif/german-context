@@ -18,7 +18,6 @@ app.include_router(routers.security)
 
 # todo user activation mail
 # todo show cards logic
-# todo pagination, sorting, filters
 # todo pep8
 # todo conjugations, declensions (nouns, pronouns, adjectives, articles, verbs)
 
@@ -28,5 +27,6 @@ app.include_router(routers.security)
 # v2
 # todo unit testing
 # todo genai endpoints
+# todo filters, nouns sorting by word
 # todo security and validation (pydantic, bleach)
 # todo react frontend
