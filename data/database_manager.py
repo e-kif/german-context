@@ -180,12 +180,9 @@ class DataManager:
     def get_topic_by_id(self, topic: str) -> Topic:
         pass
 
-    def get_words(self, limit: int = None, skip: int = 0) -> list[Type[Word]]:
-        if limit:
-            offset_value = (limit * skip)
-            db_words = self.session.query(Word).limit(limit).offset(offset_value).all()
-            return db_words
-        return self.session.query(Word).all()
+    def get_words(self, limit: int = 25, skip: int = 0) -> list[Type[Word]]:
+        db_words = self.session.query(Word).slice(limit * skip, limit * (skip + 1)).all()
+        return db_words
 
     def get_word_users(self, word_id: int) -> list[int]:
         word_users = {user_word.user_id for user_word in self.session.query(UserWord).filter_by(word_id=word_id).all()}

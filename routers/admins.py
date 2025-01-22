@@ -89,8 +89,12 @@ async def patch_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
 
 
 @admin_user_words.get('/{user_id}')
-async def get_user_words(user_id: Annotated[int, Path(title='User ID', ge=1)]) -> list[WordOut]:
-    user_words = db_manager.get_user_words(user_id)
+async def get_user_words(
+        user_id: Annotated[int, Path(title='User ID', ge=1)],
+        limit: Annotated[int, Query(title='words limit', description='words per request', ge=1, le=100)] = 25,
+        skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0
+) -> list[WordOut]:
+    user_words = db_manager.get_user_words(user_id, limit, skip)
     return serialization.word_out_list_from_user_words(user_words)
 
 
@@ -202,9 +206,9 @@ async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
 
 
 @admin_words.get('')
-async def get_words(limit: Annotated[int | None, Query(ge=0, title="Pagination Limit")] = None,
+async def get_words(limit: Annotated[int, Query(ge=1, le=500, title='Pagination Limit')] = 50,
                     skip: Annotated[int, Query(ge=0, title='Pagination page offset')] = 0) -> list[AdminWordOut]:
-    words = db_manager.get_words(limit=limit, skip=skip)
+    words = db_manager.get_words(limit, skip)
     return serialization.admin_wordlist_from_words(words)
 
 
