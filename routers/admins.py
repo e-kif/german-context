@@ -21,8 +21,11 @@ admin_topics = APIRouter(prefix='/admin_topics', dependencies=[Depends(is_user_a
 
 
 @admin_users.get('')
-async def get_users() -> list[UserOutAdmin]:
-    users = db_manager.get_users()
+async def get_users(
+    limit: Annotated[int, Query(title='users limit', description='users per request', ge=1, le=100)] = 25,
+    skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0
+) -> list[UserOutAdmin]:
+    users = db_manager.get_users(limit, skip)
     users_out = [serialization.user_out_admin(user) for user in users]
     return users_out
 

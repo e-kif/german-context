@@ -17,8 +17,8 @@ class DataManager:
         Base.metadata.create_all(self._engine)
         self.session = sessionmaker(bind=self._engine)()
 
-    def get_users(self):
-        return self.session.query(User).all()
+    def get_users(self, limit: int = 25, skip: int = 0):
+        return self.session.query(User).slice(limit * skip, limit * (skip + 1)).all()
 
     def get_user_by_id(self, user_id: int):
         try:
