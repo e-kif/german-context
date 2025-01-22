@@ -14,9 +14,11 @@ user_topics = APIRouter(prefix='/users/me/topics', tags=['user_topics'])
 
 @words.get('')
 async def read_own_words(
-        current_user: Annotated[UserOut, Depends(get_current_active_user)]
+        current_user: Annotated[UserOut, Depends(get_current_active_user)],
+        limit: Annotated[int, Query(title='words limit', description='words per request', ge=1, le=100)] = 25,
+        skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0
 ) -> list[WordOut]:
-    db_users_words = db_manager.get_user_words(current_user.id)
+    db_users_words = db_manager.get_user_words(current_user.id, limit, skip)
     return serialization.word_out_list_from_user_words(db_users_words)
 
 

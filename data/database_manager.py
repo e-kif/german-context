@@ -243,8 +243,11 @@ class DataManager:
             db_user_word = f'User word with id={user_word_id} was not found.'
         return db_user_word
 
-    def get_user_words(self, user_id: int) -> list[Type[UserWord]]:
-        db_users_words = self.session.query(UserWord).filter_by(user_id=user_id).all()
+    def get_user_words(self, user_id: int, limit: int = 25, skip: int = 0) -> str | list[Type[UserWord]]:
+        db_user = db_manager.get_user_by_id(user_id)
+        if isinstance(db_user, str):
+            return db_user
+        db_users_words = self.session.query(UserWord).filter_by(user_id=user_id).slice(skip * limit, (skip + 1) * limit).all()
         return db_users_words
 
     def add_user_word(self,
@@ -540,4 +543,5 @@ if __name__ == '__main__':
     # db_manager.session.rollback()
     # print(db_manager.check_user_role(1, 'User'))
     # print(db_manager.get_users())
-    print(db_manager.get_word_users(11))
+    [print(u_word) for u_word in  db_manager.get_user_words(6, 4, 1)]
+
