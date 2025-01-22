@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from random import randint
 from typing import Literal
+import time
 
 
 def get_soup_for_word(word: str) -> BeautifulSoup | str:
@@ -198,19 +199,21 @@ def get_words_suggestion(letters: str, page_start: int = 1, pages: int = 1):
     base_url = 'https://www.woerter.net'
     base_search_url = base_url + '/search'
     search_url = base_search_url + '?w='
-
     response_text = ''
     for page_number in range(pages):
+        if page_start + page_number > 20:
+            break
         try:
             response = requests.get(f'{search_url}{letters}&p={page_start + page_number}')
         except requests.exceptions.ConnectionError:
             print(f'Connection problem for page={page_start + page_number}')
+            time.sleep(3)
             continue
         response_text += response.text
-
+        time.sleep(3)
     if not response_text:
         return 'Connection problem. Try again later.'
-    # response = requests.get(search_url + letters)
+
     soup = BeautifulSoup(response_text, 'html.parser')
 
     word_cards = soup.find_all('div', attrs={'class': 'bTrf rClear'})

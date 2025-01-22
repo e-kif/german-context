@@ -24,8 +24,10 @@ async def read_own_words(
 async def suggest_words_by_letter_combination(
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
         letter_combination: Annotated[str, Query(title='Combination of letters', min_length=3)],
-        page_start: Annotated[int, Query(title='Page number', description='Pagination parameter', ge=1)] = 1,
-        pages: Annotated[int, Query(title='Amount of pages', description='Pagination parameter', ge=1)] = 1
+        page_start: Annotated[int, Query(title='Page number', description='Pagination parameter', ge=1, le=20)] = 1,
+        pages: Annotated[int, Query(title='Amount of pages',
+                                    description='Pagination parameter. The bigger the number, the longer the wait.',
+                                    ge=1, le=20)] = 1
 ) -> list[dict] | str:
     suggest_words = get_words_suggestion(letter_combination, page_start, pages)
     for word in suggest_words:
