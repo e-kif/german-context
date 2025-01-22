@@ -3,7 +3,7 @@ import datetime
 from typing import Type
 
 from dotenv import load_dotenv
-from sqlalchemy import URL, create_engine, exc, text
+from sqlalchemy import URL, create_engine, exc, text, desc
 from sqlalchemy.orm import sessionmaker
 
 from data.models import *
@@ -18,7 +18,7 @@ class DataManager:
         self.session = sessionmaker(bind=self._engine)()
 
     def get_users(self, limit: int = 25, skip: int = 0):
-        return self.session.query(User).slice(limit * skip, limit * (skip + 1)).all()
+        return self.session.query(User).order_by(User.id).slice(limit * skip, limit * (skip + 1)).all()
 
     def get_user_by_id(self, user_id: int):
         try:
@@ -177,15 +177,27 @@ class DataManager:
             self.session.refresh(db_topic)
         return db_topic
 
-    def get_topic_by_id(self, topic: str) -> Topic:
-        pass
+    def get_topic_by_topic(self, topic: str) -> str | Type[Topic]:
+        try:
+            db_topic = self.session.query(Topic).filter_by(name=topic).one()
+        except exc.NoResultFound:
+            return f'Topic named "{topic}" was not found.'
+        return db_topic
+
+    def get_topic_by_id(self, topic_id: int) -> str | Type[Topic]:
+        try:
+            db_topic = self.session.query(Topic).filter_by(id=topic_id).one()
+        except exc.NoResultFound:
+            return f'Topic with id={topic_id} was not found.'
+        return db_topic
 
     def get_words(self, limit: int = 25, skip: int = 0) -> list[Type[Word]]:
-        db_words = self.session.query(Word).slice(limit * skip, limit * (skip + 1)).all()
+        db_words = self.session.query(Word).order_by(Word.id).slice(limit * skip, limit * (skip + 1)).all()
         return db_words
 
     def get_word_users(self, word_id: int) -> list[int]:
-        word_users = {user_word.user_id for user_word in self.session.query(UserWord).filter_by(word_id=word_id).all()}
+        word_users = {user_word.user_id for user_word in self.session.query(UserWord)
+                      .filter_by(word_id=word_id).order_by(UserWord.user_id).all()}
         return list(word_users)
 
     def get_word_by_id(self, word_id: int) -> Type[Word]:
@@ -244,7 +256,8 @@ class DataManager:
         db_user = db_manager.get_user_by_id(user_id)
         if isinstance(db_user, str):
             return db_user
-        db_users_words = self.session.query(UserWord).filter_by(user_id=user_id).slice(skip * limit, (skip + 1) * limit).all()
+        db_users_words = self.session.query(UserWord).filter_by(user_id=user_id).order_by(UserWord.id) \
+            .slice(skip * limit, (skip + 1) * limit).all()
         return db_users_words
 
     def add_user_word(self,
@@ -342,7 +355,7 @@ class DataManager:
         except exc.NoResultFound:
             return False
 
-    def get_user_word_by_word(self, user_id: int, word: str) -> UserWord:
+    def get_user_word_by_word(self, user_id: int, word: str) -> str | Type[UserWord]:
         pass
 
     def user_word_has_translation(self, user_word_id: int) -> bool:
@@ -468,10 +481,14 @@ class DataManager:
         except exc.NoResultFound:
             return f'User with user_id={user_id} was not found.'
         user_topics = self.session.query(Topic).join(UserWordTopic).join(UserWord).join(User) \
-            .filter_by(id=user_id).slice(limit * skip, limit * (skip + 1)).all()
+            .filter_by(id=user_id).order_by(Topic.id).slice(limit * skip, limit * (skip + 1)).all()
         return user_topics
 
-    def get_user_topic_words(self, user_id: int, topic_id: int) -> str | list[Type[UserWord]]:
+    def get_user_topic_words(self,
+                             user_id: int,
+                             topic_id: int,
+                             limit: int = 25,
+                             skip: int = 0) -> str | list[Type[UserWord]]:
         try:
             self.session.query(User).filter_by(id=user_id).one()
         except exc.NoResultFound:
@@ -481,7 +498,7 @@ class DataManager:
         except exc.NoResultFound:
             return f'Topic with topic_id={topic_id} was not found.'
         user_topic_words = self.session.query(UserWord).filter_by(user_id=user_id).join(UserWordTopic) \
-            .filter_by(topic_id=topic_id).all()
+            .filter_by(topic_id=topic_id).order_by(UserWord.id).slice(limit * skip, limit * (skip+1)).all()
         if not user_topic_words:
             return f'User with id={user_id} has no words in topic with id={topic_id}.'
         return user_topic_words
@@ -513,7 +530,7 @@ class DataManager:
                                      .join(UserWord).filter(UserWord.user_id != user_id).first())
         if other_user_uses_topic:
             db_topic = self.add_topic(topic_name)
-            for user_word in self.get_user_topic_words(user_id, topic_id):
+            for user_word in self.get_user_topic_words(user_id, topic_id, 100000):
                 user_word.user_word_topic[0].topic_id = db_topic.id
             self.session.commit()
             return db_topic
@@ -539,6 +556,4 @@ db_manager = DataManager(url_object)
 if __name__ == '__main__':
     # db_manager.session.rollback()
     # print(db_manager.check_user_role(1, 'User'))
-    # print(db_manager.get_users())
-    [print(u_word) for u_word in  db_manager.get_user_words(6, 4, 1)]
-
+    print(db_manager.get_users())

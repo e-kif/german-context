@@ -22,8 +22,8 @@ admin_topics = APIRouter(prefix='/admin_topics', dependencies=[Depends(is_user_a
 
 @admin_users.get('')
 async def get_users(
-    limit: Annotated[int, Query(title='users limit', description='users per request', ge=1, le=100)] = 25,
-    skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0
+        limit: Annotated[int, Query(title='users limit', description='users per request', ge=1, le=100)] = 25,
+        skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0
 ) -> list[UserOutAdmin]:
     users = db_manager.get_users(limit, skip)
     users_out = [serialization.user_out_admin(user) for user in users]
@@ -307,9 +307,13 @@ async def get_user_topics(
 
 
 @admin_user_topics.get('/{user_id}/{topic_id}/words')
-async def get_user_topic_words(user_id: Annotated[int, Path(title='User ID', ge=1)],
-                               topic_id: Annotated[int, Path(title='Topic ID', ge=1)]) -> list[AdminUserWordOut]:
-    user_topic_words = db_manager.get_user_topic_words(user_id, topic_id)
+async def get_user_topic_words(
+        user_id: Annotated[int, Path(title='User ID', ge=1)],
+        topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
+        limit: Annotated[int, Query(title='words limit', description='words per request', ge=1, le=100)] = 25,
+        skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0
+) -> list[AdminUserWordOut]:
+    user_topic_words = db_manager.get_user_topic_words(user_id, topic_id, limit, skip)
     check_for_exception(user_topic_words, 404)
     return serialization.admin_wordlist_out_from_user_words(user_topic_words)
 

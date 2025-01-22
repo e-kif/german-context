@@ -168,9 +168,13 @@ async def get_own_topics(
 
 
 @user_topics.get('/{topic_id}')
-async def get_own_topic_words(topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
-                              current_user: Annotated[UserOut, Depends(get_current_active_user)]) -> list[WordOut]:
-    own_topic_words = db_manager.get_user_topic_words(current_user.id, topic_id)
+async def get_own_topic_words(
+        topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
+        current_user: Annotated[UserOut, Depends(get_current_active_user)],
+        limit: Annotated[int, Query(title='words limit', description='words per request', ge=1, le=100)] = 25,
+        skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0
+) -> list[WordOut]:
+    own_topic_words = db_manager.get_user_topic_words(current_user.id, topic_id, limit, skip)
     check_for_exception(own_topic_words, 404)
     return serialization.word_out_list_from_user_words(own_topic_words)
 
