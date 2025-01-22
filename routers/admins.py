@@ -6,7 +6,7 @@ from data.schemas import (UserOutAdmin, UserIn, UserPatchAdmin, UserInAdmin,
                           TopicOut, AdminUserWordOut,
                           AdminWord)
 from data.database_manager import db_manager
-from modules.security import get_password_hash, is_user_admin
+from modules.security import get_password_hash, is_user_admin, get_current_user
 import modules.serialization as serialization
 from modules.word_info import get_word_info, get_word_info_from_search, get_words_suggestion
 from modules.utils import check_for_exception, raise_exception
@@ -38,6 +38,11 @@ async def add_user(user: UserInAdmin) -> UserOutAdmin:
     check_for_exception(new_user, 409)
     db_manager.assign_user_role(new_user.id, user.role)
     return new_user
+
+
+@admin_users.get('/me')
+async def read_admin_me(admin: Annotated[UserOutAdmin, Depends(get_current_user)]) -> UserOutAdmin:
+    return serialization.user_out_admin(admin)
 
 
 @admin_users.get('/{user_id}')
@@ -203,8 +208,10 @@ async def get_words(limit: Annotated[int | None, Query(ge=0, title="Pagination L
 @admin_words.get('/suggest')
 async def suggest_word_by_letter_combination(
         letter_combination: Annotated[str, Query(min_length=3)],
-        page_start: Annotated[int, Query(ge=1)] = 1,
-        pages: Annotated[int, Query(ge=1)] = 1
+        page_start: Annotated[int, Query(title='Page number', description='Pagination parameter', ge=1, le=20)] = 1,
+        pages: Annotated[int, Query(title='Amount of pages',
+                                    description='Pagination parameter. The bigger the number, the longer the wait.',
+                                    ge=1, le=20)] = 1
 ) -> list[dict] | str:
     return get_words_suggestion(letter_combination, page_start, pages)
 
