@@ -157,8 +157,12 @@ async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
 
 
 @user_topics.get('')
-async def get_own_topics(current_user: Annotated[UserOut, Depends(get_current_active_user)]) -> list[TopicOut]:
-    user_topics_list = db_manager.get_user_topics(current_user.id)
+async def get_own_topics(
+        current_user: Annotated[UserOut, Depends(get_current_active_user)],
+        limit: Annotated[int, Query(title='words limit', description='topics per request', ge=1, le=100)] = 25,
+        skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0
+) -> list[TopicOut]:
+    user_topics_list = db_manager.get_user_topics(current_user.id, limit, skip)
     check_for_exception(user_topics_list, 404)
     return user_topics_list
 

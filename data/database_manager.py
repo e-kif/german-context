@@ -465,13 +465,13 @@ class DataManager:
             db_user_word = f'No user word with id={user_word_id} was found.'
         return db_user_word
 
-    def get_user_topics(self, user_id: int) -> str | list[Type[Topic]]:
+    def get_user_topics(self, user_id: int, limit: int = 25, skip: int = 0) -> str | list[Type[Topic]]:
         try:
             self.session.query(User).filter_by(id=user_id).one()
         except exc.NoResultFound:
             return f'User with user_id={user_id} was not found.'
         user_topics = self.session.query(Topic).join(UserWordTopic).join(UserWord).join(User) \
-            .filter_by(id=user_id).all()
+            .filter_by(id=user_id).slice(limit * skip, limit * (skip + 1)).all()
         return user_topics
 
     def get_user_topic_words(self, user_id: int, topic_id: int) -> str | list[Type[UserWord]]:

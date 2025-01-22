@@ -287,10 +287,14 @@ async def patch_word(word_id: Annotated[int, Path(ge=1)],
 
 
 @admin_user_topics.get('/{user_id}')
-async def get_user_topics(user_id: Annotated[int, Path(title='User ID', ge=1)]) -> list[TopicOut]:
+async def get_user_topics(
+        user_id: Annotated[int, Path(title='User ID', ge=1)],
+        limit: Annotated[int, Query(title='topics limit', description='topics per request', ge=1, le=100)] = 25,
+        skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0
+) -> list[TopicOut]:
     db_user = db_manager.get_user_by_id(user_id)
     check_for_exception(db_user, 404)
-    user_topics = db_manager.get_user_topics(user_id)
+    user_topics = db_manager.get_user_topics(user_id, limit, skip)
     check_for_exception(user_topics, 404)
     return user_topics
 
