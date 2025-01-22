@@ -6,7 +6,13 @@ from data.database_manager import db_manager
 from modules.security import get_password_hash, get_current_active_user
 from modules.utils import check_for_exception
 
+home_routes = APIRouter(tags=['Home'])
 users = APIRouter(prefix='/users', tags=['users'])
+
+
+@home_routes.get('/')
+async def home():
+    return {'message': 'Welcome to the German-Context App!'}
 
 
 @users.get('')

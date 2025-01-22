@@ -5,11 +5,7 @@ app = FastAPI(title='German Context App',
               description="The app aims to help users study some German showing user's words in different contexts.")
 
 
-@app.get("/", tags=['Home'])
-async def home():
-    return {'message': 'Welcome to the German-Context App!'}
-
-
+app.include_router(routers.home_routes)
 app.include_router(routers.users)
 app.include_router(routers.words)
 app.include_router(routers.user_topics)
@@ -22,7 +18,7 @@ app.include_router(routers.security)
 
 # todo user activation mail
 # todo show cards logic
-# todo paginations
+# todo pagination, sorting, filters
 # todo pep8
 # todo conjugations, declensions (nouns, pronouns, adjectives, articles, verbs)
 
@@ -31,5 +27,6 @@ app.include_router(routers.security)
 
 # v2
 # todo unit testing
+# todo genai endpoints
 # todo security and validation (pydantic, bleach)
 # todo react frontend
