@@ -197,9 +197,11 @@ class DataManager:
             return f'Topic with id={topic_id} was not found.'
         return db_topic
 
-    def get_words(self, limit: int = 25, skip: int = 0) -> list[Type[Word]]:
-        db_words = self.session.query(Word).order_by(Word.id).slice(limit * skip, limit * (skip + 1)).all()
-        return db_words
+    def get_words(self, limit: int = 25, skip: int = 0, sort_by: str = 'id', reverse: bool = False
+                  ) -> list[Type[Word]]:
+        query = self.session.query(Word)
+        query, sorting = self.sort_order(query, Word, sort_by, reverse)
+        return query.order_by(sorting).slice(limit * skip, limit * (skip + 1)).all()
 
     def get_word_users(self, word_id: int) -> list[int]:
         word_users = {user_word.user_id for user_word in self.session.query(UserWord)
@@ -524,6 +526,18 @@ class DataManager:
                     query = query.join(UserRole).join(Role)
                 case _:
                     model = User
+        elif model == Word:
+            match sort_by:
+                case 'word_type':
+                    model = WordType
+                    sort_by = 'name'
+                case 'users':
+                    model = UserWord
+                    sort_by = 'user_id'
+                case 'example':
+                    model = WordExample
+            if model != Word:
+                query = query.outerjoin(model)
 
         sorting = model.__dict__.get(sort_by)
         if model == Word and sort_by == 'word':
@@ -607,6 +621,6 @@ url_object = URL.create(
 db_manager = DataManager(url_object)
 
 if __name__ == '__main__':
-    # db_manager.session.rollback()
+    db_manager.session.rollback()
     # print(db_manager.check_user_role(1, 'User'))
     [print(u_word) for u_word in db_manager.get_user_words(6, sort_by='word_type', reverse=False)]

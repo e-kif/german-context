@@ -213,10 +213,11 @@ async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
 @admin_words.get('')
 async def get_words(limit: Annotated[int, Query(ge=1, le=500, title='Pagination Limit')] = 50,
                     skip: Annotated[int, Query(ge=0, title='Pagination page offset')] = 0,
-                    sort_by: Literal['id', 'word', 'word_type', 'level', 'users', 'english', 'example'] = 'id'
+                    sort_by: Literal['id', 'word', 'word_type', 'level', 'users', 'english', 'example'] = 'id',
+                    desc: Annotated[bool, Query(description='true - descending')] = False
 ) -> list[AdminWordOut]:
-    words = db_manager.get_words(limit, skip)
-    return serialization.admin_wordlist_from_words(words, sort_by)
+    words = db_manager.get_words(limit, skip, sort_by, desc)
+    return serialization.admin_wordlist_from_words(words)
 
 
 @admin_words.get('/suggest')

@@ -42,11 +42,10 @@ def admin_word_from_word(db_word: Word) -> AdminWordOut:
     return admin_word_out
 
 
-def admin_wordlist_from_words(words: list[Word], sort_by: str) -> list[AdminWordOut]:
+def admin_wordlist_from_words(words: list[Word]) -> list[AdminWordOut]:
     if not words:
         return []
-    return sorted([admin_word_from_word(admin_word) for admin_word in words],
-                  key=lambda word: word.__dict__.get(sort_by))
+    return [admin_word_from_word(admin_word) for admin_word in words]
 
 
 def user_out_admin(user: User) -> UserOutAdmin:
