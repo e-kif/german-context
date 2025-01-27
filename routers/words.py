@@ -18,7 +18,7 @@ async def read_own_words(
         limit: Annotated[int, Query(title='words limit', description='words per request', ge=1, le=100)] = 25,
         skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0,
         sort_by: Literal['id', 'level', 'word', 'word_type', 'english', 'example'] = 'id',
-        desc: Annotated[Literal[0, 1], Query(description='0 - ascending, 1 - descending')] = 0
+        desc: Annotated[bool, Query(description='true - descending order')] = False
 ) -> list[WordOut]:
     db_users_words = db_manager.get_user_words(current_user.id, limit, skip, sort_by, desc)
     return serialization.word_out_list_from_user_words(db_users_words)
@@ -164,7 +164,7 @@ async def get_own_topics(
         limit: Annotated[int, Query(title='words limit', description='topics per request', ge=1, le=100)] = 25,
         skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0,
         sort_by: Literal['id', 'name'] = 'id',
-        desc: Annotated[Literal[0, 1], Query(title='sorting order', description='0 - ascending, 1 - descending')] = 0
+        desc: Annotated[bool, Query(description='true - descending order')] = False
 ) -> list[TopicOut]:
     user_topics_list = db_manager.get_user_topics(current_user.id, limit, skip, sort_by, desc)
     check_for_exception(user_topics_list, 404)
@@ -178,11 +178,11 @@ async def get_own_topic_words(
         limit: Annotated[int, Query(title='words limit', description='words per request', ge=1, le=100)] = 25,
         skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0,
         sort_by: Literal['id', 'word', 'word_type', 'level', 'english', 'example'] = 'id',
-        desc: Annotated[Literal[0, 1], Query(title='sorting order', description='0 - ascending, 1 - descending')] = 0
+        desc: Annotated[bool, Query(description='true - descending order')] = False
 ) -> list[WordOut]:
-    own_topic_words = db_manager.get_user_topic_words(current_user.id, topic_id, limit, skip)
+    own_topic_words = db_manager.get_user_topic_words(current_user.id, topic_id, limit, skip, sort_by, desc)
     check_for_exception(own_topic_words, 404)
-    return serialization.word_out_list_from_user_words(own_topic_words, sort_by, desc)
+    return serialization.word_out_list_from_user_words(own_topic_words)
 
 
 @user_topics.put('/{topic_id}')

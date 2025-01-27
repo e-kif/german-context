@@ -3,7 +3,7 @@ import datetime
 from typing import Type
 
 from dotenv import load_dotenv
-from sqlalchemy import URL, create_engine, exc, text, desc, func
+from sqlalchemy import URL, create_engine, exc, text, desc
 from sqlalchemy.orm import sessionmaker
 
 from data.models import *
@@ -252,27 +252,13 @@ class DataManager:
             db_user_word = f'User word with id={user_word_id} was not found.'
         return db_user_word
 
-    def get_user_words(self, user_id: int, limit: int = 25, skip: int = 0, sort_by: str = 'id', reverse: int = 0
+    def get_user_words(self, user_id: int, limit: int = 25, skip: int = 0, sort_by: str = 'id', reverse: bool = False
                        ) -> str | list[Type[UserWord]]:
         db_user = db_manager.get_user_by_id(user_id)
         if isinstance(db_user, str):
             return db_user
         query = self.session.query(UserWord).filter_by(user_id=user_id)
-        match sort_by:
-            case 'level' | 'word' | 'english':
-                model = Word
-            case 'word_type':
-                model = WordType
-                sort_by = 'name'
-                query = query.join(Word)
-            case 'example':
-                model = WordExample
-                query = query.join(Word)
-            case 'id' | _:
-                model = UserWord
-        sorting = self.sort_order(model, sort_by, reverse)
-        if model != UserWord:
-            query = query.join(model)
+        query, sorting = self.sort_order(query=query, model=None, sort_by=sort_by, reverse=reverse)
         return query.order_by(sorting).slice(limit * skip, limit * (skip + 1)).all()
 
     def add_user_word(self,
@@ -490,29 +476,46 @@ class DataManager:
             db_user_word = f'No user word with id={user_word_id} was found.'
         return db_user_word
 
-    def get_user_topics(self, user_id: int, limit: int = 25, skip: int = 0, sort_by: str = 'id', reverse: int = 0
+    def get_user_topics(self, user_id: int, limit: int = 25, skip: int = 0, sort_by: str = 'id', reverse: bool = False
                         ) -> str | list[Type[Topic]]:
         try:
             self.session.query(User).filter_by(id=user_id).one()
         except exc.NoResultFound:
             return f'User with user_id={user_id} was not found.'
-        sorting = self.sort_order(Topic, sort_by, reverse)
+        sorting = self.sort_order(model=Topic, sort_by=sort_by, reverse=reverse)
         user_topics = self.session.query(Topic).join(UserWordTopic).join(UserWord).join(User) \
             .filter_by(id=user_id).order_by(sorting).slice(limit * skip, limit * (skip + 1)).all()
         return user_topics
 
     @staticmethod
-    def sort_order(model, sort_by: str, reverse: int = 0):
+    def sort_order(query=None, model: Base | None = None, sort_by: str = 'id', reverse: bool = False):
+        if not model:
+            match sort_by:
+                case 'level' | 'word' | 'english':
+                    model = Word
+                case 'word_type':
+                    model = WordType
+                    sort_by = 'name'
+                    query = query.join(Word)
+                case 'example':
+                    model = WordExample
+                    query = query.join(Word)
+                case 'id' | _:
+                    model = UserWord
+            if model != UserWord:
+                query = query.join(model)
         sorting = model.__dict__.get(sort_by)
         if model == Word and sort_by == 'word':
             sorting = func.regexp_replace(Word.word, r'(der |die |das |der, |das, )', '', 'g')
-        return desc(sorting) if reverse else sorting
+        return (query, desc(sorting)) if reverse else (query, sorting)
 
     def get_user_topic_words(self,
                              user_id: int,
                              topic_id: int,
                              limit: int = 25,
-                             skip: int = 0) -> str | list[Type[UserWord]]:
+                             skip: int = 0,
+                             sort_by: str = 'id',
+                             reverse: bool = False) -> str | list[Type[UserWord]]:
         try:
             self.session.query(User).filter_by(id=user_id).one()
         except exc.NoResultFound:
@@ -521,8 +524,9 @@ class DataManager:
             self.session.query(Topic).filter_by(id=topic_id).one()
         except exc.NoResultFound:
             return f'Topic with topic_id={topic_id} was not found.'
-        user_topic_words = self.session.query(UserWord).filter_by(user_id=user_id).join(UserWordTopic) \
-            .filter_by(topic_id=topic_id).order_by(UserWord.id).slice(limit * skip, limit * (skip+1)).all()
+        query = self.session.query(UserWord).filter_by(user_id=user_id).join(UserWordTopic).filter_by(topic_id=topic_id)
+        query, sorting = self.sort_order(query=query, model=None, sort_by=sort_by, reverse=reverse)
+        user_topic_words = query.order_by(sorting).slice(limit * skip, limit * (skip + 1)).all()
         if not user_topic_words:
             return f'User with id={user_id} has no words in topic with id={topic_id}.'
         return user_topic_words
@@ -580,5 +584,4 @@ db_manager = DataManager(url_object)
 if __name__ == '__main__':
     # db_manager.session.rollback()
     # print(db_manager.check_user_role(1, 'User'))
-    [print(u_word) for u_word in db_manager.get_user_words(6, sort_by='word_type', reverse=1)]
-
+    [print(u_word) for u_word in db_manager.get_user_words(6, sort_by='word_type', reverse=False)]
