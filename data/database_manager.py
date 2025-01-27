@@ -475,15 +475,21 @@ class DataManager:
             db_user_word = f'No user word with id={user_word_id} was found.'
         return db_user_word
 
-    def get_user_topics(self, user_id: int, limit: int = 25, skip: int = 0, sort_by: str = 'id'
+    def get_user_topics(self, user_id: int, limit: int = 25, skip: int = 0, sort_by: str = 'id', reverse: int = 0
                         ) -> str | list[Type[Topic]]:
         try:
             self.session.query(User).filter_by(id=user_id).one()
         except exc.NoResultFound:
             return f'User with user_id={user_id} was not found.'
+        sorting = self.sort_order(Topic, sort_by, reverse)
         user_topics = self.session.query(Topic).join(UserWordTopic).join(UserWord).join(User) \
-            .filter_by(id=user_id).order_by(sort_by).slice(limit * skip, limit * (skip + 1)).all()
+            .filter_by(id=user_id).order_by(sorting).slice(limit * skip, limit * (skip + 1)).all()
         return user_topics
+
+    @staticmethod
+    def sort_order(model, sort_by: str, reverse: int = 0):
+        sorting = model.__dict__.get(sort_by)
+        return desc(sorting) if reverse else sorting
 
     def get_user_topic_words(self,
                              user_id: int,

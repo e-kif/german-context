@@ -163,9 +163,10 @@ async def get_own_topics(
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
         limit: Annotated[int, Query(title='words limit', description='topics per request', ge=1, le=100)] = 25,
         skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0,
-        sort_by: Annotated[Literal['id', 'name'], Query(description='sorting parameter')] = 'id'
+        sort_by: Literal['id', 'name'] = 'id',
+        desc: Annotated[int, Query(title='sorting order', description='0 - ascending, 1 - descending')] = 0
 ) -> list[TopicOut]:
-    user_topics_list = db_manager.get_user_topics(current_user.id, limit, skip, sort_by)
+    user_topics_list = db_manager.get_user_topics(current_user.id, limit, skip, sort_by, desc)
     check_for_exception(user_topics_list, 404)
     return user_topics_list
 
@@ -176,12 +177,12 @@ async def get_own_topic_words(
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
         limit: Annotated[int, Query(title='words limit', description='words per request', ge=1, le=100)] = 25,
         skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0,
-        sort_by: Annotated[Literal['id', 'word', 'word_type', 'level', 'english', 'example'],
-                           Query(description='sorting parameter')] = 'id'
+        sort_by: Literal['id', 'word', 'word_type', 'level', 'english', 'example'] = 'id',
+        desc: Annotated[int, Query(title='sorting order', ge=0, le=1, description='0 - ascending, 1 - descending')] = 0
 ) -> list[WordOut]:
     own_topic_words = db_manager.get_user_topic_words(current_user.id, topic_id, limit, skip)
     check_for_exception(own_topic_words, 404)
-    return serialization.word_out_list_from_user_words(own_topic_words, sort_by)
+    return serialization.word_out_list_from_user_words(own_topic_words, sort_by, desc)
 
 
 @user_topics.put('/{topic_id}')

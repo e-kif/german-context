@@ -23,9 +23,9 @@ def word_out_from_user_word(user_word: UserWord) -> WordOut:
     return word_out
 
 
-def word_out_list_from_user_words(user_words: list[UserWord], sort_by) -> list[WordOut]:
+def word_out_list_from_user_words(user_words: list[UserWord], sort_by, desc: int = 0) -> list[WordOut]:
     word_list = [word_out_from_user_word(user_word) for user_word in user_words]
-    return sorted(word_list, key=lambda w: w.dict().get(sort_by))
+    return sorted(word_list, key=lambda w: w.dict().get(sort_by), reverse=bool(desc))
 
 
 def admin_word_from_word(db_word: Word) -> AdminWordOut:
@@ -73,7 +73,7 @@ def admin_wordlist_out_from_user_words(words: list[UserWord], sort_by: str) -> l
         if user_word.example:
             admin_word.custom_example = user_word.example.example
         wordlist.append(admin_word)
-    return sorted(wordlist, key=lambda word:word.__dict__.get(sort_by))
+    return sorted(wordlist, key=lambda word: word.__dict__.get(sort_by))
 
 
 def admin_word_out_from_db_word(db_word: Word) -> AdminWord:
