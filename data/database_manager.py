@@ -17,8 +17,10 @@ class DataManager:
         Base.metadata.create_all(self._engine)
         self.session = sessionmaker(bind=self._engine)()
 
-    def get_users(self, limit: int = 25, skip: int = 0):
-        return self.session.query(User).order_by(User.id).slice(limit * skip, limit * (skip + 1)).all()
+    def get_users(self, limit: int = 25, skip: int = 0, sort_by: str = 'id', reverse: bool = False):
+        query = self.session.query(User)
+        query, sorting = self.sort_order(query, User, sort_by, reverse)
+        return query.order_by(sorting).slice(limit * skip, limit * (skip + 1)).all()
 
     def get_user_by_id(self, user_id: int):
         try:
@@ -132,8 +134,12 @@ class DataManager:
         user.email = email
         user.password = password
         user.level = level
-        self.session.commit()
-        self.session.refresh(user)
+        try:
+            self.session.commit()
+            self.session.refresh(user)
+        except exc.IntegrityError as error:
+            self.session.rollback()
+            return error.args[0].split('\n')[1].split(':')[1].strip()
         return user
 
     def add_word_type(self, word_type: str) -> WordType:
@@ -233,8 +239,12 @@ class DataManager:
         if example:
             db_word.example.example = example
             db_word.example.translation = example_translation
-        self.session.commit()
-        self.session.refresh(db_word)
+        try:
+            self.session.commit()
+            self.session.refresh(db_word)
+        except exc.IntegrityError as error:
+            self.session.rollback()
+            return error.args[0].split('\n')[1].split(':')[1].strip()
         return db_word
 
     def get_word_by_word(self, word: str, word_type: str) -> Type[Word] | str:
@@ -258,7 +268,7 @@ class DataManager:
         if isinstance(db_user, str):
             return db_user
         query = self.session.query(UserWord).filter_by(user_id=user_id)
-        query, sorting = self.sort_order(query=query, model=None, sort_by=sort_by, reverse=reverse)
+        query, sorting = self.sort_order(query=query, model=UserWord, sort_by=sort_by, reverse=reverse)
         return query.order_by(sorting).slice(limit * skip, limit * (skip + 1)).all()
 
     def add_user_word(self,
@@ -433,12 +443,14 @@ class DataManager:
             if example != db_user_word.example.example or example_translation != db_user_word.example.translation:
                 db_user_word.example.example = example
                 db_user_word.example.translation = example_translation
-        print(f'{topics=}')
         for topic in topics:
-            print(f'{topic=}')
             self.add_user_word_topic(db_user_word.id, self.add_topic(topic).id)
-        self.session.commit()
-        self.session.refresh(db_user_word)
+        try:
+            self.session.commit()
+            self.session.refresh(db_user_word)
+        except exc.IntegrityError as error:
+            self.session.rollback()
+            return error.args[0].split('\n')[1].split(':')[1].strip()
         return db_user_word
 
     def add_new_word(self, word: dict) -> Word:
@@ -489,7 +501,7 @@ class DataManager:
 
     @staticmethod
     def sort_order(query=None, model: Base | None = None, sort_by: str = 'id', reverse: bool = False):
-        if not model:
+        if model == UserWord:
             match sort_by:
                 case 'level' | 'word' | 'english':
                     model = Word
@@ -504,6 +516,15 @@ class DataManager:
                     model = UserWord
             if model != UserWord:
                 query = query.join(model)
+        elif model == User:
+            match sort_by:
+                case 'role':
+                    model = Role
+                    sort_by = 'name'
+                    query = query.join(UserRole).join(Role)
+                case _:
+                    model = User
+
         sorting = model.__dict__.get(sort_by)
         if model == Word and sort_by == 'word':
             sorting = func.regexp_replace(Word.word, r'(der |die |das |der, |das, )', '', 'g')
@@ -525,7 +546,7 @@ class DataManager:
         except exc.NoResultFound:
             return f'Topic with topic_id={topic_id} was not found.'
         query = self.session.query(UserWord).filter_by(user_id=user_id).join(UserWordTopic).filter_by(topic_id=topic_id)
-        query, sorting = self.sort_order(query=query, model=None, sort_by=sort_by, reverse=reverse)
+        query, sorting = self.sort_order(query=query, model=UserWord, sort_by=sort_by, reverse=reverse)
         user_topic_words = query.order_by(sorting).slice(limit * skip, limit * (skip + 1)).all()
         if not user_topic_words:
             return f'User with id={user_id} has no words in topic with id={topic_id}.'
@@ -564,8 +585,12 @@ class DataManager:
             return db_topic
         db_topic = self.session.query(Topic).filter_by(id=topic_id).one()
         db_topic.name = topic_name
-        self.session.commit()
-        self.session.refresh(db_topic)
+        try:
+            self.session.commit()
+            self.session.refresh(db_topic)
+        except exc.IntegrityError as error:
+            self.session.rollback()
+            return error.args[0].split('\n')[1].split(':')[1].strip()
         return db_topic
 
 

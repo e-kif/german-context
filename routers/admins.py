@@ -25,11 +25,12 @@ async def get_users(
         limit: Annotated[int, Query(title='users limit', description='users per request', ge=1, le=100)] = 25,
         skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0,
         sort_by: Literal['id', 'username', 'email', 'level', 'login_attempts',
-                         'last_login', 'created_at', 'streak', 'role'] = 'id'
+                         'last_login', 'created_at', 'streak', 'role'] = 'id',
+        desc: Annotated[bool, Query(description='true - descending')] = False
 ) -> list[UserOutAdmin]:
-    users = db_manager.get_users(limit, skip)
+    users = db_manager.get_users(limit, skip, sort_by, desc)
     users_out = [serialization.user_out_admin(user) for user in users]
-    return sorted(users_out, key=lambda user: user.__dict__.get(sort_by))
+    return users_out
 
 
 @admin_users.post('/add')
@@ -95,10 +96,11 @@ async def get_user_words(
         user_id: Annotated[int, Path(title='User ID', ge=1)],
         limit: Annotated[int, Query(title='words limit', description='words per request', ge=1, le=100)] = 25,
         skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0,
-        sort_by: Literal['id', 'word', 'word_type', 'level', 'english', 'example'] = 'id'
+        sort_by: Literal['id', 'word', 'word_type', 'level', 'english', 'example'] = 'id',
+        desc: Annotated[bool, Query(description='true - descending')] = False
 ) -> list[WordOut]:
-    user_words = db_manager.get_user_words(user_id, limit, skip)
-    return serialization.word_out_list_from_user_words(user_words, sort_by)
+    user_words = db_manager.get_user_words(user_id, limit, skip, sort_by, desc)
+    return serialization.word_out_list_from_user_words(user_words)
 
 
 @admin_user_words.get('/words/{user_word_id}')
