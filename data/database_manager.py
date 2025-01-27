@@ -3,7 +3,7 @@ import datetime
 from typing import Type
 
 from dotenv import load_dotenv
-from sqlalchemy import URL, create_engine, exc, text, desc
+from sqlalchemy import URL, create_engine, exc, text, desc, func
 from sqlalchemy.orm import sessionmaker
 
 from data.models import *
@@ -252,13 +252,28 @@ class DataManager:
             db_user_word = f'User word with id={user_word_id} was not found.'
         return db_user_word
 
-    def get_user_words(self, user_id: int, limit: int = 25, skip: int = 0) -> str | list[Type[UserWord]]:
+    def get_user_words(self, user_id: int, limit: int = 25, skip: int = 0, sort_by: str = 'id', reverse: int = 0
+                       ) -> str | list[Type[UserWord]]:
         db_user = db_manager.get_user_by_id(user_id)
         if isinstance(db_user, str):
             return db_user
-        db_users_words = self.session.query(UserWord).filter_by(user_id=user_id).order_by(UserWord.id) \
-            .slice(skip * limit, (skip + 1) * limit).all()
-        return db_users_words
+        query = self.session.query(UserWord).filter_by(user_id=user_id)
+        match sort_by:
+            case 'level' | 'word' | 'english':
+                model = Word
+            case 'word_type':
+                model = WordType
+                sort_by = 'name'
+                query = query.join(Word)
+            case 'example':
+                model = WordExample
+                query = query.join(Word)
+            case 'id' | _:
+                model = UserWord
+        sorting = self.sort_order(model, sort_by, reverse)
+        if model != UserWord:
+            query = query.join(model)
+        return query.order_by(sorting).slice(limit * skip, limit * (skip + 1)).all()
 
     def add_user_word(self,
                       user_id: int,
@@ -489,6 +504,8 @@ class DataManager:
     @staticmethod
     def sort_order(model, sort_by: str, reverse: int = 0):
         sorting = model.__dict__.get(sort_by)
+        if model == Word and sort_by == 'word':
+            sorting = func.regexp_replace(Word.word, r'(der |die |das |der, |das, )', '', 'g')
         return desc(sorting) if reverse else sorting
 
     def get_user_topic_words(self,
@@ -563,4 +580,5 @@ db_manager = DataManager(url_object)
 if __name__ == '__main__':
     # db_manager.session.rollback()
     # print(db_manager.check_user_role(1, 'User'))
-    print(db_manager.get_users())
+    [print(u_word) for u_word in db_manager.get_user_words(6, sort_by='word_type', reverse=1)]
+

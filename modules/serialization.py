@@ -23,9 +23,8 @@ def word_out_from_user_word(user_word: UserWord) -> WordOut:
     return word_out
 
 
-def word_out_list_from_user_words(user_words: list[UserWord], sort_by, desc: int = 0) -> list[WordOut]:
-    word_list = [word_out_from_user_word(user_word) for user_word in user_words]
-    return sorted(word_list, key=lambda w: w.dict().get(sort_by), reverse=bool(desc))
+def word_out_list_from_user_words(user_words: list[UserWord]) -> list[WordOut]:
+    return [word_out_from_user_word(user_word) for user_word in user_words]
 
 
 def admin_word_from_word(db_word: Word) -> AdminWordOut:

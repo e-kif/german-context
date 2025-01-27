@@ -17,11 +17,11 @@ async def read_own_words(
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
         limit: Annotated[int, Query(title='words limit', description='words per request', ge=1, le=100)] = 25,
         skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0,
-        sort_by: Annotated[Literal['id', 'level', 'word', 'word_type', 'english', 'example'],
-                           Query(description='sorting parameter')] = 'id'
+        sort_by: Literal['id', 'level', 'word', 'word_type', 'english', 'example'] = 'id',
+        desc: Annotated[int, Query(ge=0, le=1, description='0 - ascending, 1 - descending')] = 0
 ) -> list[WordOut]:
-    db_users_words = db_manager.get_user_words(current_user.id, limit, skip)
-    return serialization.word_out_list_from_user_words(db_users_words, sort_by)
+    db_users_words = db_manager.get_user_words(current_user.id, limit, skip, sort_by, desc)
+    return serialization.word_out_list_from_user_words(db_users_words)
 
 
 @words.get('/suggest')
