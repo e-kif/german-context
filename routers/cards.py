@@ -23,7 +23,9 @@ async def get_topic_cards(current_user: Annotated[UserOut, Depends(get_current_a
 @cards.get('/random')
 async def get_random_cards(current_user: Annotated[UserOut, Depends(get_current_active_user)],
                            limit: Annotated[int, Query(ge=1, le=50)] = 25):
-    pass
+    random_db_words = db_manager.get_random_user_words(current_user.id, limit)
+    check_for_exception(random_db_words, 404)
+    return [serialization.user_word_card_from_user_word(user_word) for user_word in random_db_words]
 
 
 @cards.get('/update_info/{user_word_id}')

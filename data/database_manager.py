@@ -623,6 +623,17 @@ class DataManager:
         self.session.refresh(db_user_word)
         return db_user_word
 
+    def get_random_user_words(self, user_id: int, limit: int = 25) -> str | list[Type[UserWord]]:
+        db_user = self.get_user_by_id(user_id)
+        if isinstance(db_user, str):
+            return f'User with id={user_id} was not found.'
+        try:
+            user_words = self.session.query(UserWord).filter_by(user_id=user_id).order_by(func.random()) \
+                .slice(0, limit).all()
+        except exc.NoResultFound:
+            return f'User with id={user_id} has no words.'
+        return user_words
+
 
 load_dotenv()
 url_object = URL.create(
