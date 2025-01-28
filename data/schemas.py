@@ -109,3 +109,17 @@ class TopicIn(BaseModel):
 
 class TopicOut(TopicIn):
     id: int
+
+
+class UserWordCard(BaseModel):
+    id: int
+    word: str
+    level: Literal['A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'Unknown']
+    word_type: str
+    topics: list[str]
+    fails: int
+    success: int
+    last_shown: datetime.datetime
+    english: str
+    example: str | None = None
+    example_translation: str | None = None

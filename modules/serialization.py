@@ -87,6 +87,30 @@ def admin_word_out_from_db_word(db_word: Word) -> AdminWord:
     return word_out
 
 
+def user_word_card_from_user_word(db_word: UserWord) -> UserWordCard:
+    user_word_card = UserWordCard(
+        id=db_word.id,
+        word=db_word.word.word,
+        word_type=db_word.word.word_type.name,
+        level=db_word.word.level,
+        english=db_word.word.english,
+        example=db_word.word.example.example,
+        example_translation=db_word.word.example.translation,
+        topics=[user_topic.topic.name for user_topic in db_word.user_word_topic],
+        fails=db_word.fails,
+        success=db_word.success,
+        last_shown=db_word.last_shown
+    )
+    if db_word.custom_translation:
+        user_word_card.english = db_word.custom_translation.translation
+    if db_word.user_level:
+        user_word_card.level = db_word.user_level.level
+    if db_word.example:
+        user_word_card.example = db_word.example.example
+        user_word_card.example_translation = db_word.example.translation
+    return user_word_card
+
+
 if __name__ == '__main__':
     # word = db_manager.get_user_words(6)[0]
     # print(word_out_from_user_word(word))

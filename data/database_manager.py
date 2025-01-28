@@ -613,6 +613,16 @@ class DataManager:
             return error.args[0].split('\n')[1].split(':')[1].strip()
         return db_topic
 
+    def update_card(self, user_word_id, shown_time, guess) -> str | UserWord:
+        db_user_word = self.get_user_word_by_id(user_word_id)
+        if isinstance(db_user_word, str):
+            return db_user_word
+        db_user_word.last_shown = shown_time
+        setattr(db_user_word, guess, getattr(db_user_word, guess) + 1)
+        self.session.commit()
+        self.session.refresh(db_user_word)
+        return db_user_word
+
 
 load_dotenv()
 url_object = URL.create(
