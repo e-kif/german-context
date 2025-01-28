@@ -71,7 +71,7 @@ def admin_wordlist_out_from_user_words(words: list[UserWord], sort_by: str) -> l
         if user_word.example:
             admin_word.custom_example = user_word.example.example
         wordlist.append(admin_word)
-    return sorted(wordlist, key=lambda word: word.__dict__.get(sort_by))
+    return wordlist
 
 
 def admin_word_out_from_db_word(db_word: Word) -> AdminWord:

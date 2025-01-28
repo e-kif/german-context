@@ -504,8 +504,6 @@ class DataManager:
             return f'User with user_id={user_id} was not found.'
         query = self.session.query(Topic).join(UserWordTopic).join(UserWord).filter_by(user_id=user_id)
         sorted_query = self.sort_query(query, Topic, sort_by, reverse)
-        # user_topics = self.session.query(Topic).join(UserWordTopic).join(UserWord).join(User) \
-        #     .filter_by(id=user_id).order_by(sorting).slice(limit * skip, limit * (skip + 1)).all()
         return self.slice_query(sorted_query, limit, skip)
 
     @staticmethod
@@ -521,9 +519,6 @@ class DataManager:
                 case 'example':
                     model = WordExample
                     query = query.join(Word)
-                # case 'word_id':
-                #     model = Word
-                #     sort_by = 'id'
                 case _:
                     model = UserWord
             if model != UserWord:
@@ -541,9 +536,6 @@ class DataManager:
                 case 'word_type':
                     model = WordType
                     sort_by = 'name'
-                case 'users':
-                    model = UserWord
-                    sort_by = 'user_id'
                 case 'example':
                     model = WordExample
             if model != Word:
@@ -574,7 +566,7 @@ class DataManager:
         except exc.NoResultFound:
             return f'Topic with topic_id={topic_id} was not found.'
         query = self.session.query(UserWord).filter_by(user_id=user_id).join(UserWordTopic).filter_by(topic_id=topic_id)
-        sorted_query = self.sort_query(query=query, model=UserWord, sort_by=sort_by, reverse=reverse)
+        sorted_query = self.sort_query(query, UserWord, sort_by, reverse)
         user_topic_words = self.slice_query(sorted_query, limit, skip)
         if not user_topic_words:
             return f'User with id={user_id} has no words in topic with id={topic_id}.'
