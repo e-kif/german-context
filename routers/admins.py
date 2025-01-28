@@ -305,11 +305,12 @@ async def get_user_topics(
         user_id: Annotated[int, Path(title='User ID', ge=1)],
         limit: Annotated[int, Query(title='topics limit', description='topics per request', ge=1, le=100)] = 25,
         skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0,
-        sort_by: Literal['id', 'name'] = 'id'
+        sort_by: Literal['id', 'name'] = 'id',
+        desc: Annotated[bool, Query(description='true - descending')] = False
 ) -> list[TopicOut]:
     db_user = db_manager.get_user_by_id(user_id)
     check_for_exception(db_user, 404)
-    user_topics = db_manager.get_user_topics(user_id, limit, skip, sort_by)
+    user_topics = db_manager.get_user_topics(user_id, limit, skip, sort_by, desc)
     check_for_exception(user_topics, 404)
     return user_topics
 
@@ -320,9 +321,10 @@ async def get_user_topic_words(
         topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
         limit: Annotated[int, Query(title='words limit', description='words per request', ge=1, le=100)] = 25,
         skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0,
-        sort_by: Literal['id', 'word_id', 'word', 'fails', 'success', 'last_shown'] = 'id'
+        sort_by: Literal['id', 'word_id', 'word', 'fails', 'success', 'last_shown'] = 'id',
+        desc: Annotated[bool, Query(description='true - descending')] = False
 ) -> list[AdminUserWordOut]:
-    user_topic_words = db_manager.get_user_topic_words(user_id, topic_id, limit, skip)
+    user_topic_words = db_manager.get_user_topic_words(user_id, topic_id, limit, skip, sort_by, desc)
     check_for_exception(user_topic_words, 404)
     return serialization.admin_wordlist_out_from_user_words(user_topic_words, sort_by)
 

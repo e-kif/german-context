@@ -19,8 +19,8 @@ class DataManager:
 
     def get_users(self, limit: int = 25, skip: int = 0, sort_by: str = 'id', reverse: bool = False):
         query = self.session.query(User)
-        query, sorting = self.sort_order(query, User, sort_by, reverse)
-        return query.order_by(sorting).slice(limit * skip, limit * (skip + 1)).all()
+        sorted_query = self.sort_query(query, User, sort_by, reverse)
+        return self.slice_query(sorted_query, limit, skip)
 
     def get_user_by_id(self, user_id: int):
         try:
@@ -200,8 +200,14 @@ class DataManager:
     def get_words(self, limit: int = 25, skip: int = 0, sort_by: str = 'id', reverse: bool = False
                   ) -> list[Type[Word]]:
         query = self.session.query(Word)
-        query, sorting = self.sort_order(query, Word, sort_by, reverse)
-        return query.order_by(sorting).slice(limit * skip, limit * (skip + 1)).all()
+        if sort_by == 'users':
+            sorting = desc('users') if reverse else 'users'
+            sorted_query = self.session.query(Word, func.count(UserWord.user_id).label('users')) \
+                .outerjoin(UserWord).group_by(Word.id).order_by(sorting)
+            rows_tuple = self.slice_query(sorted_query, limit, skip)
+            return [row[0] for row in rows_tuple]
+        sorted_query = self.sort_query(query, Word, sort_by, reverse)
+        return self.slice_query(sorted_query, limit, skip)
 
     def get_word_users(self, word_id: int) -> list[int]:
         word_users = {user_word.user_id for user_word in self.session.query(UserWord)
@@ -270,8 +276,8 @@ class DataManager:
         if isinstance(db_user, str):
             return db_user
         query = self.session.query(UserWord).filter_by(user_id=user_id)
-        query, sorting = self.sort_order(query=query, model=UserWord, sort_by=sort_by, reverse=reverse)
-        return query.order_by(sorting).slice(limit * skip, limit * (skip + 1)).all()
+        sorted_query = self.sort_query(query=query, model=UserWord, sort_by=sort_by, reverse=reverse)
+        return self.slice_query(sorted_query, limit, skip)
 
     def add_user_word(self,
                       user_id: int,
@@ -496,13 +502,14 @@ class DataManager:
             self.session.query(User).filter_by(id=user_id).one()
         except exc.NoResultFound:
             return f'User with user_id={user_id} was not found.'
-        sorting = self.sort_order(model=Topic, sort_by=sort_by, reverse=reverse)
-        user_topics = self.session.query(Topic).join(UserWordTopic).join(UserWord).join(User) \
-            .filter_by(id=user_id).order_by(sorting).slice(limit * skip, limit * (skip + 1)).all()
-        return user_topics
+        query = self.session.query(Topic).join(UserWordTopic).join(UserWord).filter_by(user_id=user_id)
+        sorted_query = self.sort_query(query, Topic, sort_by, reverse)
+        # user_topics = self.session.query(Topic).join(UserWordTopic).join(UserWord).join(User) \
+        #     .filter_by(id=user_id).order_by(sorting).slice(limit * skip, limit * (skip + 1)).all()
+        return self.slice_query(sorted_query, limit, skip)
 
     @staticmethod
-    def sort_order(query=None, model: Base | None = None, sort_by: str = 'id', reverse: bool = False):
+    def sort_query(query=None, model: Base | None = None, sort_by: str = 'id', reverse: bool = False):
         if model == UserWord:
             match sort_by:
                 case 'level' | 'word' | 'english':
@@ -514,7 +521,10 @@ class DataManager:
                 case 'example':
                     model = WordExample
                     query = query.join(Word)
-                case 'id' | _:
+                # case 'word_id':
+                #     model = Word
+                #     sort_by = 'id'
+                case _:
                     model = UserWord
             if model != UserWord:
                 query = query.join(model)
@@ -542,7 +552,11 @@ class DataManager:
         sorting = model.__dict__.get(sort_by)
         if model == Word and sort_by == 'word':
             sorting = func.regexp_replace(Word.word, r'(der |die |das |der, |das, )', '', 'g')
-        return (query, desc(sorting)) if reverse else (query, sorting)
+        return query.order_by(desc(sorting)) if reverse else query.order_by(sorting)
+
+    @staticmethod
+    def slice_query(query, limit: int, skip: int = 0):
+        return query.slice(limit * skip, limit * (skip + 1)).all()
 
     def get_user_topic_words(self,
                              user_id: int,
@@ -560,8 +574,8 @@ class DataManager:
         except exc.NoResultFound:
             return f'Topic with topic_id={topic_id} was not found.'
         query = self.session.query(UserWord).filter_by(user_id=user_id).join(UserWordTopic).filter_by(topic_id=topic_id)
-        query, sorting = self.sort_order(query=query, model=UserWord, sort_by=sort_by, reverse=reverse)
-        user_topic_words = query.order_by(sorting).slice(limit * skip, limit * (skip + 1)).all()
+        sorted_query = self.sort_query(query=query, model=UserWord, sort_by=sort_by, reverse=reverse)
+        user_topic_words = self.slice_query(sorted_query, limit, skip)
         if not user_topic_words:
             return f'User with id={user_id} has no words in topic with id={topic_id}.'
         return user_topic_words
@@ -623,4 +637,5 @@ db_manager = DataManager(url_object)
 if __name__ == '__main__':
     db_manager.session.rollback()
     # print(db_manager.check_user_role(1, 'User'))
-    [print(u_word) for u_word in db_manager.get_user_words(6, sort_by='word_type', reverse=False)]
+    # [print(u_word) for u_word in db_manager.get_user_words(6, sort_by='word_type', reverse=False)]
+    print(db_manager.session.query(Word, func.count(UserWord.user_id).label('users')).outerjoin(UserWord).group_by(func.count('users')))
