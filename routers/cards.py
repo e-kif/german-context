@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Path, Query
 from typing import Annotated, Literal
 from datetime import datetime
 
-from data.schemas import WordOut, TopicOut, UserOut, UserWordCard
+from data.schemas import UserOut, UserWordCard
 from data.database_manager import db_manager
 from modules.security import get_current_active_user
 import modules.serialization as serialization
@@ -13,11 +13,13 @@ cards = APIRouter(prefix='/user_cards', dependencies=[Depends(get_current_active
 
 @cards.get('/topic/{topic_id}')
 async def get_topic_cards(current_user: Annotated[UserOut, Depends(get_current_active_user)],
-                          topic_id: Annotated[int, Path(ge=1)],
+                          topic_id: Annotated[int | None, Path(ge=1)],
                           limit: Annotated[int, Query(ge=1, le=50)] = 25,
                           random: bool = False
-                          ):
-    pass
+                          ) -> list[UserWordCard]:
+    db_cards = db_manager.get_user_cards(current_user.id, topic_id, limit, random)
+    check_for_exception(db_cards, 404)
+    return [serialization.user_word_card_from_user_word(user_word) for user_word in db_cards]
 
 
 @cards.get('/random')

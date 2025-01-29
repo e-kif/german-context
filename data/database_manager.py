@@ -634,6 +634,30 @@ class DataManager:
             return f'User with id={user_id} has no words.'
         return user_words
 
+    def get_user_cards(self, user_id: int, topic_id: int | None, limit: int = 25, random: bool = False
+                       ) -> str | list[Type[UserWord]]:
+        db_user = self.get_user_by_id(user_id)
+        if isinstance(db_user, str):
+            return db_user
+        query = self.session.query(UserWord).filter_by(user_id=user_id)
+        if topic_id:
+            db_topic = self.get_topic_by_id(topic_id)
+            if isinstance(db_topic, str):
+                return db_topic
+            query = query.join(UserWordTopic).filter_by(topic_id=topic_id)
+        if random:
+            sorted_query = query.order_by(func.random())
+        else:
+            sorting = (UserWord.fails * 2) + (UserWord.success * -1) \
+                      + func.extract('epoch', (func.now() - UserWord.last_shown)) * 0.5
+            sorted_query = query.order_by(desc(sorting))
+        try:
+            user_cards = self.slice_query(sorted_query, limit)
+        except exc.NoResultFound:
+            return f'User with id={user_id} has no word in topic with id={topic_id}' if topic_id \
+                else f'User with id={user_id} has no words.'
+        return user_cards
+
 
 load_dotenv()
 url_object = URL.create(
@@ -650,5 +674,3 @@ db_manager = DataManager(url_object)
 if __name__ == '__main__':
     db_manager.session.rollback()
     # print(db_manager.check_user_role(1, 'User'))
-    # [print(u_word) for u_word in db_manager.get_user_words(6, sort_by='word_type', reverse=False)]
-    print(db_manager.session.query(Word, func.count(UserWord.user_id).label('users')).outerjoin(UserWord).group_by(func.count('users')))
