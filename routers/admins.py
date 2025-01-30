@@ -3,8 +3,7 @@ from typing import Annotated, Literal
 
 from data.schemas import (UserOutAdmin, UserIn, UserPatchAdmin, UserInAdmin,
                           WordOut, WordIn, UserWordIn, UserWordPatch, WordPatch, AdminWordOut,
-                          TopicOut, AdminUserWordOut,
-                          AdminWord)
+                          TopicOut, AdminUserWordOut, AdminWord)
 from data.database_manager import db_manager
 from modules.security import get_password_hash, is_user_admin, get_current_user
 import modules.serialization as serialization

@@ -1,7 +1,6 @@
 import os
 import datetime
 from typing import Type
-
 from dotenv import load_dotenv
 from sqlalchemy import URL, create_engine, exc, text, desc
 from sqlalchemy.orm import sessionmaker
