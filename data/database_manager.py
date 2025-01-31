@@ -450,6 +450,9 @@ class DataManager:
             if example != db_user_word.example.example or example_translation != db_user_word.example.translation:
                 db_user_word.example.example = example
                 db_user_word.example.translation = example_translation
+        previous_user_word_topics = self.session.query(UserWordTopic).filter_by(user_word_id=user_word_id).all()
+        for previous_topic in previous_user_word_topics:
+            self.session.delete(previous_topic)
         for topic in topics:
             self.add_user_word_topic(db_user_word.id, self.add_topic(topic).id)
         try:
