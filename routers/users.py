@@ -4,7 +4,7 @@ from typing import Annotated
 from data.schemas import UserIn, UserOut, UserPatch, UserBase
 from data.database_manager import db_manager
 from modules.security import get_password_hash, get_current_active_user
-from modules.utils import check_for_exception
+from modules.utils import check_for_exception, raise_exception
 
 home_routes = APIRouter(tags=['Home'])
 users = APIRouter(prefix='/users', tags=['users'])
@@ -58,7 +58,9 @@ async def update_user(user: UserIn,
         password=get_password_hash(user.password),
         level=user.level
     )
-    check_for_exception(updated_user, 404)
+    if isinstance(updated_user, str) and 'was not found' in updated_user:
+        raise_exception(404, updated_user)
+    check_for_exception(updated_user, 409)
     return updated_user
 
 
@@ -75,6 +77,9 @@ async def patch_user(user: UserPatch,
     update_data = user.model_dump(exclude_unset=True)
     updated_user = stored_user_model.model_copy(update=update_data)
     db_user_updated = await update_user(updated_user, current_user)
+    if isinstance(db_user_updated, str) and 'was not found' in db_user_updated:
+        raise_exception(404, db_user_updated)
+    check_for_exception(db_user_updated, 409)
     return db_user_updated
 
 

@@ -21,6 +21,7 @@ app.include_router(routers.security)
 
 # v2
 # todo unit testing
+# todo adjust server time
 # todo genai endpoints
 # todo filters, nouns sorting by word
 # todo user activation mail
