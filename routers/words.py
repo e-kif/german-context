@@ -12,7 +12,7 @@ words = APIRouter(prefix='/users/me/words', tags=['user_words'])
 user_topics = APIRouter(prefix='/users/me/topics', tags=['user_topics'])
 
 
-@words.get('')
+@words.get('', summary="Show user's words")
 async def read_own_words(
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
         limit: Annotated[int, Query(title='words limit', description='words per request', ge=1, le=100)] = 25,
@@ -20,6 +20,13 @@ async def read_own_words(
         sort_by: Literal['id', 'level', 'word', 'word_type', 'english', 'example'] = 'id',
         desc: Annotated[bool, Query(description='true - descending order')] = False
 ) -> list[WordOut]:
+    """## Show user words info
+    Available query parameters:
+    - *limit* - amount of words to be shown
+    - *skip* - how many pages with _limit_ to skip (0 - first page, 1 - second page etc.)
+    - *sort_by* - word attribute for sorting
+    - *desc* - should sorting be ascending (false) or descending (true)
+    """
     db_users_words = db_manager.get_user_words(current_user.id, limit, skip, sort_by, desc)
     return serialization.word_out_list_from_user_words(db_users_words)
 
