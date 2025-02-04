@@ -12,7 +12,7 @@ words = APIRouter(prefix='/users/me/words', tags=['user_words'])
 user_topics = APIRouter(prefix='/users/me/topics', tags=['user_topics'])
 
 
-@words.get('')
+@words.get('', summary="Show user's words")
 async def read_own_words(
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
         limit: Annotated[int, Query(title='words limit', description='words per request', ge=1, le=100)] = 25,
@@ -20,30 +20,43 @@ async def read_own_words(
         sort_by: Literal['id', 'level', 'word', 'word_type', 'english', 'example'] = 'id',
         desc: Annotated[bool, Query(description='true - descending order')] = False
 ) -> list[WordOut]:
+    """## Show user words info
+    Available query parameters:
+    - *limit* - amount of words to be shown
+    - *skip* - how many pages with _limit_ to skip (0 - first page, 1 - second page etc.)
+    - *sort_by* - word attribute for sorting
+    - *desc* - should sorting be ascending (false) or descending (true)
+    """
     db_users_words = db_manager.get_user_words(current_user.id, limit, skip, sort_by, desc)
     return serialization.word_out_list_from_user_words(db_users_words)
 
 
-@words.get('/suggest')
+@words.get('/suggest', summary='Suggest words from letter combination')
 async def suggest_words_by_letter_combination(
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
         letter_combination: Annotated[str, Query(title='Combination of letters', min_length=3)],
         page_start: Annotated[int, Query(title='Page number', description='Pagination parameter', ge=1, le=20)] = 1,
         pages: Annotated[int, Query(title='Amount of pages',
-                                    description='Pagination parameter. The bigger the number, the longer the wait.',
+                                    description='Pagination parameter',
                                     ge=1, le=20)] = 1
 ) -> list[dict] | str:
+    """## Given a letter combination shows a list of suggested words
+    - *letter combination* - combination of letters that should be present in words
+    - *page_start* - what page should suggestions start from
+    - *pages* - amount of pages to show at once. More pages means longer response time
+    """
     suggest_words = get_words_suggestion(letter_combination, page_start, pages)
     for word in suggest_words:
         del word['url']
     return suggest_words
 
 
-@words.get('/{user_word_id}')
+@words.get('/{user_word_id}', summary="Show user word's info")
 async def get_own_word(
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
         user_word_id: Annotated[int, Path(title='UserWord id', ge=1)]
 ) -> WordOut:
+    """## Given a user_word_id returns the user word's info"""
     db_word = db_manager.get_user_word_by_id(user_word_id)
     check_for_exception(db_word, 404)
     if db_word.user_id != current_user.id:
@@ -51,11 +64,17 @@ async def get_own_word(
     return serialization.word_out_from_user_word(db_word)
 
 
-@words.post('')
+@words.post('', summary='Add a user word')
 async def add_user_word(
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
         word: UserWordIn
 ) -> WordOut:
+    """## Adds new word to user's words
+    Word can be added:
+    1. by providing only one german word (all info will be fetched automatically).
+    2. by providing *word*, *translation*, *level* and *word_type*.
+
+    """
     parsed_word = get_word_info(word.word)
     custom_word = False
     if isinstance(parsed_word, str) and not all([word.english, word.level, word.word_type]):
@@ -98,11 +117,14 @@ async def add_user_word(
     return serialization.word_out_from_user_word(db_user_word)
 
 
-@words.delete('/{user_word_id}')
+@words.delete('/{user_word_id}', summary="Removes user's word from the app")
 async def remove_user_word(
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
         user_word_id: Annotated[int, Path(ge=1)]
 ) -> WordOut | None:
+    """## Given *user_word_id* removes it from the app
+    This action is irreversible.
+    """
     the_word = db_manager.get_user_word_by_id(user_word_id)
     check_for_exception(the_word, 404)
     if current_user.id != the_word.user_id:
@@ -112,10 +134,20 @@ async def remove_user_word(
     return serialized_word
 
 
-@words.patch('/{user_word_id}')
+@words.patch('/{user_word_id}', summary="Update user word's info")
 async def patch_own_word(user_word_id: Annotated[int, Path(ge=1)],
                          current_user: Annotated[UserOut, Depends(get_current_active_user)],
                          word: UserWordPatch) -> WordOut:
+    """## Update info for user word with *user_word_id*
+    Expected at least one of the parameters:
+     - word
+     - word_type
+     - english
+     - level
+     - topics
+     - example
+     - example_translation
+     """
     db_user_word = db_manager.get_user_word_by_id(user_word_id)
     check_for_exception(db_user_word, 404)
     if db_user_word.user_id != current_user.id:
@@ -139,10 +171,12 @@ async def patch_own_word(user_word_id: Annotated[int, Path(ge=1)],
     return serialization.word_out_from_user_word(updated_db_user_word)
 
 
-@words.put('/{user_word_id}')
+@words.put('/{user_word_id}', summary="Update user word's info")
 async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
                           current_user: Annotated[UserOut, Depends(get_current_active_user)],
                           word: UserWordIn) -> WordOut:
+    """## Update info for user word with *user_word_id*
+    All parameters are required."""
     db_user_word = db_manager.get_user_word_by_id(user_word_id)
     check_for_exception(db_user_word, 404)
     if db_user_word.user_id != current_user.id:
