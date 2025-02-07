@@ -194,7 +194,7 @@ async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
     return serialization.word_out_from_user_word(updated_db_user_word)
 
 
-@user_topics.get('')
+@user_topics.get('', summary="Shows all user's topics")
 async def get_own_topics(
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
         limit: Annotated[int, Query(title='words limit', description='topics per request', ge=1, le=100)] = 25,
@@ -202,12 +202,14 @@ async def get_own_topics(
         sort_by: Literal['id', 'name'] = 'id',
         desc: Annotated[bool, Query(description='true - descending order')] = False
 ) -> list[TopicOut]:
+    """## Get a list of all user's topics
+    User topics can be ordered by topic's _name_ or _id_ in ascending or descending order."""
     user_topics_list = db_manager.get_user_topics(current_user.id, limit, skip, sort_by, desc)
     check_for_exception(user_topics_list, 404)
     return user_topics_list
 
 
-@user_topics.get('/{topic_id}')
+@user_topics.get('/{topic_id}', summary="Show all user topic's words")
 async def get_own_topic_words(
         topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
         current_user: Annotated[UserOut, Depends(get_current_active_user)],
@@ -216,23 +218,30 @@ async def get_own_topic_words(
         sort_by: Literal['id', 'word', 'word_type', 'level', 'english', 'example'] = 'id',
         desc: Annotated[bool, Query(description='true - descending order')] = False
 ) -> list[WordOut]:
+    """## Get a list of all words from user topic with *topic_id*
+    Words can be sorted and paginated.
+    """
     own_topic_words = db_manager.get_user_topic_words(current_user.id, topic_id, limit, skip, sort_by, desc)
     check_for_exception(own_topic_words, 404)
     return serialization.word_out_list_from_user_words(own_topic_words)
 
 
-@user_topics.put('/{topic_id}')
+@user_topics.put('/{topic_id}', summary="Update topic's name")
 async def update_own_topic_name(topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
                                 current_user: Annotated[UserOut, Depends(get_current_active_user)],
                                 topic_name: str) -> TopicOut:
+    """## Update user's topic
+    """
     updated_user_topic = db_manager.update_user_topic(current_user.id, topic_id, topic_name)
     check_for_exception(updated_user_topic, 404)
     return updated_user_topic
 
 
-@user_topics.delete('/{topic_id}')
+@user_topics.delete('/{topic_id}', summary='Delete topic from the app')
 async def remove_own_topic(topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
                            current_user: Annotated[UserOut, Depends(get_current_active_user)]) -> TopicOut:
+    """## Delete topic from the application
+    This action is **irreversible**. This will delete the topic and all related user words as well."""
     user_topic = db_manager.delete_user_topic(current_user.id, topic_id)
     check_for_exception(user_topic, 404)
     return user_topic
