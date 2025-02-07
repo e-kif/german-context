@@ -16,15 +16,14 @@ app.include_router(routers.admin_words)
 app.include_router(routers.admin_topics)
 app.include_router(routers.security)
 
-# todo show cards logic
 # todo docstrings
 
 # v2
 # todo unit testing
 # todo adjust server time
 # todo genai endpoints
-# todo filters, nouns sorting by word
-# todo user activation mail
+# todo filters
+# todo user activation mail (background tasks)
 # todo security and validation (pydantic, bleach)
 # todo react frontend
 # todo conjugations, declensions (nouns, pronouns, adjectives, articles, verbs)
