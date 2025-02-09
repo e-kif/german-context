@@ -19,7 +19,7 @@ admin_user_topics = APIRouter(prefix='/admin/user_topics', dependencies=[Depends
 admin_topics = APIRouter(prefix='/admin_topics', dependencies=[Depends(is_user_admin)], tags=['admin_topics'])
 
 
-@admin_users.get('')
+@admin_users.get('', summary="Show users' info")
 async def get_users(
         limit: Annotated[int, Query(title='users limit', description='users per request', ge=1, le=100)] = 25,
         skip: Annotated[int, Query(title='skip pages', description='pages to skip', ge=0)] = 0,
@@ -27,13 +27,17 @@ async def get_users(
                          'last_login', 'created_at', 'streak', 'role'] = 'id',
         desc: Annotated[bool, Query(description='true - descending')] = False
 ) -> list[UserOutAdmin]:
+    """## Show info about registered users"""
     users = db_manager.get_users(limit, skip, sort_by, desc)
     users_out = [serialization.user_out_admin(user) for user in users]
     return users_out
 
 
-@admin_users.post('/add')
+@admin_users.post('/add', summary='Add a new user')
 async def add_user(user: UserInAdmin) -> UserOutAdmin:
+    """## Register new application user
+    *username* and *email* should be unique.
+    """
     new_user = db_manager.add_user(
         username=user.username,
         email=user.email,
@@ -45,28 +49,34 @@ async def add_user(user: UserInAdmin) -> UserOutAdmin:
     return new_user
 
 
-@admin_users.get('/me')
+@admin_users.get('/me', summary="Show admin's info")
 async def read_admin_me(admin: Annotated[UserOutAdmin, Depends(get_current_user)]) -> UserOutAdmin:
+    """## Display info of currently logged in administrator"""
     return serialization.user_out_admin(admin)
 
 
-@admin_users.get('/{user_id}')
+@admin_users.get('/{user_id}', summary="Show specific user's info")
 async def get_user(user_id: Annotated[int, Path(ge=1, title='User ID')]) -> UserOutAdmin:
+    """## Display info for user with *user_id*"""
     user = db_manager.get_user_by_id(user_id)
     check_for_exception(user, 404)
     return serialization.user_out_admin(user)
 
 
-@admin_users.delete('/{user_id}')
+@admin_users.delete('/{user_id}', summary='Delete user')
 async def remove_user(user_id: Annotated[int, Path(title='User ID', ge=1)]) -> UserOutAdmin:
+    """## Remove a user with *user_id* from the app
+    This action is irreversible. All user_words and user topic will be deleted as well."""
     delete_user = db_manager.delete_user(user_id)
     check_for_exception(delete_user, 404)
     return serialization.user_out_admin(delete_user)
 
 
-@admin_users.put('/{user_id}')
+@admin_users.put('/{user_id}', summary="Update user's info")
 async def update_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
                       user: UserInAdmin) -> UserOutAdmin:
+    """## Change user info
+    All fields are required."""
     updated_user = db_manager.update_user(
         user_id=user_id,
         username=user.username,
@@ -78,9 +88,11 @@ async def update_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
     return serialization.user_out_admin(updated_user)
 
 
-@admin_users.patch('/{user_id}')
+@admin_users.patch('/{user_id}', summary="Update user's info")
 async def patch_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
                      user: UserPatchAdmin) -> UserOutAdmin:
+    """## Change user info
+    At least one field should be provided."""
     db_user = db_manager.get_user_by_id(user_id)
     check_for_exception(db_user, 404)
     stored_user_model = UserIn(**db_user.__dict__)
