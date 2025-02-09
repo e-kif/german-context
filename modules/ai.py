@@ -3,6 +3,7 @@ import json
 from dotenv import load_dotenv
 from data.schemas import BaseModel
 from typing import Type
+import os
 
 load_dotenv()
 
@@ -27,5 +28,5 @@ def ai_request(prompt: str, model: str, schema: Type[BaseModel] | None):
 
 
 if __name__ == '__main__':
-    ai = ai_request('why the sky is blue?', 'deepseek-r1:1.5b', GeneralAnswer)
+    ai = ai_request('why are the roses red?', os.getenv('AI_MODEL'), GeneralAnswer)
     print(ai)
