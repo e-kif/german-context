@@ -102,7 +102,7 @@ async def patch_user(user_id: Annotated[int, Path(title='User ID', ge=1)],
     return db_user_updated
 
 
-@admin_user_words.get('/{user_id}')
+@admin_user_words.get('/{user_id}', summary="Show user's words")
 async def get_user_words(
         user_id: Annotated[int, Path(title='User ID', ge=1)],
         limit: Annotated[int, Query(title='words limit', description='words per request', ge=1, le=100)] = 25,
@@ -110,22 +110,25 @@ async def get_user_words(
         sort_by: Literal['id', 'word', 'word_type', 'level', 'english', 'example'] = 'id',
         desc: Annotated[bool, Query(description='true - descending')] = False
 ) -> list[WordOut]:
+    """## Displays words of a user with *user_id*"""
     user_words = db_manager.get_user_words(user_id, limit, skip, sort_by, desc)
     return serialization.word_out_list_from_user_words(user_words)
 
 
-@admin_user_words.get('/words/{user_word_id}')
+@admin_user_words.get('/words/{user_word_id}', summary='Show user word')
 async def get_user_word(
         user_word_id: Annotated[int, Path(title='UserWord ID', ge=1)]
 ) -> WordOut:
+    """## Display user word info"""
     db_word = db_manager.get_user_word_by_id(user_word_id)
     check_for_exception(db_word, 404, f'No user word with id={user_word_id} was found.')
     return serialization.word_out_from_user_word(db_word)
 
 
-@admin_user_words.post('/{user_id}')
+@admin_user_words.post('/{user_id}', summary='Add user word')
 async def add_user_word(user_id: Annotated[int, Path(title='User ID', ge=1)],
                         word: UserWordIn) -> WordOut:
+    """## Add a word for user with *user_id*"""
     db_user = db_manager.get_user_by_id(user_id)
     check_for_exception(db_user, 404)
     parsed_word = get_word_info(word.word)
@@ -170,10 +173,11 @@ async def add_user_word(user_id: Annotated[int, Path(title='User ID', ge=1)],
     return serialization.word_out_from_user_word(db_user_word)
 
 
-@admin_user_words.delete('/words/{user_word_id}')
+@admin_user_words.delete('/words/{user_word_id}', summary='Delete user word')
 async def remove_user_word(
         user_word_id: Annotated[int, Path(ge=1)]
 ) -> WordOut | None:
+    """## Remove user word with *user_word_id* from the application"""
     db_user_word = db_manager.get_user_word_by_id(user_word_id)
     check_for_exception(db_user_word, 404)
     serialized_word = serialization.word_out_from_user_word(db_user_word)
@@ -181,9 +185,12 @@ async def remove_user_word(
     return serialized_word
 
 
-@admin_user_words.patch('/words/{user_word_id}')
+@admin_user_words.patch('/words/{user_word_id}', summary='Update user word info')
 async def patch_own_word(user_word_id: Annotated[int, Path(ge=1)],
                          word: UserWordPatch) -> WordOut:
+    """## Update info for user word with *user_word_id*
+    At least one field should be provided.
+    """
     db_user_word = db_manager.get_user_word_by_id(user_word_id)
     check_for_exception(db_user_word, 404)
     stored_word_model = WordOut(**serialization.word_out_from_user_word(db_user_word).__dict__)
@@ -203,9 +210,11 @@ async def patch_own_word(user_word_id: Annotated[int, Path(ge=1)],
     return serialization.word_out_from_user_word(updated_db_user_word)
 
 
-@admin_user_words.put('/words/{user_word_id}')
+@admin_user_words.put('/words/{user_word_id}', summary='Update user word info')
 async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
                           word: UserWordIn) -> WordOut:
+    """## Update info for user word with *user_word_id*
+    All fields are required."""
     db_user_word = db_manager.get_user_word_by_id(user_word_id)
     check_for_exception(db_user_word, 404)
     updated_db_user_word = db_manager.update_user_word(
