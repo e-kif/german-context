@@ -123,3 +123,8 @@ class UserWordCard(BaseModel):
     english: str
     example: str | None = None
     example_translation: str | None = None
+
+
+class ContextSentence(BaseModel):
+    german: str
+    english: str

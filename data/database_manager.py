@@ -636,6 +636,21 @@ class DataManager:
             return f'User with id={user_id} has no words.'
         return user_words
 
+    def get_random_user_words_from_topic(self, user_id: int, topic_id: int,
+                                         limit: int = 2) -> str | list[Type[UserWord]]:
+        db_user = self.get_user_by_id(user_id)
+        if isinstance(db_user, str):
+            return f'User with id={user_id} was not found.'
+        db_topic = self.get_topic_by_id(topic_id)
+        if isinstance(db_topic, str):
+            return f'Topic with id={topic_id} was not found.'
+        try:
+            db_topic_words = self.session.query(UserWord).filter_by(user_id=user_id) \
+                .join(UserWordTopic).filter_by(topic_id=topic_id).order_by(func.random()).limit(limit).all()
+        except exc.NoResultFound:
+            return f'User with id={user_id} has no words in topic with id={topic_id}'
+        return db_topic_words
+
     def get_user_cards(self, user_id: int, topic_id: int | None, limit: int = 25, random: bool = False
                        ) -> str | list[Type[UserWord]]:
         db_user = self.get_user_by_id(user_id)
