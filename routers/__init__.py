@@ -9,3 +9,4 @@ from .admins import admin_user_words
 from .admins import admin_user_topics
 from .admins import admin_topics
 from .cards import cards
+from .ai_context import topic_context
