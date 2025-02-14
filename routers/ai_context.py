@@ -24,5 +24,6 @@ async def generate_sentence_from_topic(
     topic = db_manager.get_topic_by_id(topic_id).name
     prompt = ai.build_sentence_prompt(topic, level, prompt_words)
     ai_response = await ai.ai_request(prompt)
+    check_for_exception(ai_response, 504)
     return ai_response if isinstance(ai_response, dict) \
         else raise_exception(504, 'AI needs to rest. Try again later.')

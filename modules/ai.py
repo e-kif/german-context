@@ -26,7 +26,10 @@ async def ai_request(prompt: str, model: str = os.getenv('AI_MODEL'), schema: Co
     )
     if schema:
         data['format'] = schema.model_json_schema()
-    response = requests.post(url, data=json.dumps(data))
+    try:
+        response = requests.post(url, data=json.dumps(data))
+    except requests.exceptions.ConnectionError:
+        return 'Connection problem. Try again later.'
     if response.status_code == 200:
         return json.loads(response.json().get('response'))
 
