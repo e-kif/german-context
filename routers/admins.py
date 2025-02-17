@@ -230,17 +230,18 @@ async def update_own_word(user_word_id: Annotated[int, Path(ge=1)],
     return serialization.word_out_from_user_word(updated_db_user_word)
 
 
-@admin_words.get('')
+@admin_words.get('', summary='Get application words')
 async def get_words(limit: Annotated[int, Query(ge=1, le=500, title='Pagination Limit')] = 50,
                     skip: Annotated[int, Query(ge=0, title='Pagination page offset')] = 0,
                     sort_by: Literal['id', 'word', 'word_type', 'level', 'users', 'english', 'example'] = 'id',
                     desc: Annotated[bool, Query(description='true - descending')] = False
 ) -> list[AdminWordOut]:
+    """## Retrieve a list of application words with optional sorting and pagination"""
     words = db_manager.get_words(limit, skip, sort_by, desc)
     return serialization.admin_wordlist_from_words(words)
 
 
-@admin_words.get('/suggest')
+@admin_words.get('/suggest', summary='Suggest words based on letter combination')
 async def suggest_word_by_letter_combination(
         letter_combination: Annotated[str, Query(min_length=3)],
         page_start: Annotated[int, Query(title='Page number', description='Pagination parameter', ge=1, le=20)] = 1,
@@ -248,6 +249,10 @@ async def suggest_word_by_letter_combination(
                                     description='Pagination parameter. The bigger the number, the longer the wait.',
                                     ge=1, le=20)] = 1
 ) -> list[dict] | str:
+    """##  Retrieve suggested words based on a given letter combination
+    This endpoint provides up to 20 words per _page_. The _pages_ are numbered from 1 to 20,
+    depending on the available German words that match the provided *letter_combination*.
+    Please note that requesting more _pages_ may result in longer response times."""
     return get_words_suggestion(letter_combination, page_start, pages)
 
 
