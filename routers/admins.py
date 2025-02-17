@@ -256,15 +256,17 @@ async def suggest_word_by_letter_combination(
     return get_words_suggestion(letter_combination, page_start, pages)
 
 
-@admin_words.get('/{word_id}')
+@admin_words.get('/{word_id}', summary='Get word info')
 async def get_word(word_id: Annotated[int, Path(title='Word ID', ge=1)]) -> AdminWordOut:
+    """## Retrieve word information"""
     db_word = db_manager.get_word_by_id(word_id)
     check_for_exception(db_word, 404)
     return serialization.admin_word_from_word(db_word)
 
 
-@admin_words.post('')
+@admin_words.post('', summary='Add new words')
 async def add_word(word: WordIn) -> AdminWord:
+    """## Add a new word to the application"""
     db_word = db_manager.get_word_by_word(word.word, word.word_type)
     if not isinstance(db_word, str):
         raise_exception(409, f'Word {db_word.word} ({db_word.word_type} already exists.')
@@ -279,8 +281,9 @@ async def add_word(word: WordIn) -> AdminWord:
     return serialization.admin_word_out_from_db_word(db_word)
 
 
-@admin_words.delete('/{word_id}')
+@admin_words.delete('/{word_id}', summary='Delete a word')
 async def delete_word(word_id: Annotated[int, Path(title='Word ID', ge=1)]) -> AdminWord:
+    """## Removes a word with *word_id* from the application"""
     db_word = db_manager.get_word_by_id(word_id)
     check_for_exception(db_word, 404)
     word_out = serialization.admin_word_out_from_db_word(db_word)
