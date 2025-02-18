@@ -291,9 +291,11 @@ async def delete_word(word_id: Annotated[int, Path(title='Word ID', ge=1)]) -> A
     return word_out
 
 
-@admin_words.put('/{word_id}')
+@admin_words.put('/{word_id}', summary='Update word info')
 async def update_word(word_id: Annotated[int, Path(title='Word ID', ge=1)],
                       word: WordIn) -> AdminWordOut:
+    """## Update the info for the word with *word_id*
+    All fields are required."""
     db_word = db_manager.get_word_by_id(word_id)
     check_for_exception(db_word, 404)
     updated_word = db_manager.update_word(
@@ -307,9 +309,11 @@ async def update_word(word_id: Annotated[int, Path(title='Word ID', ge=1)],
     return serialization.admin_word_out_from_db_word(updated_word)
 
 
-@admin_words.patch('/{word_id}')
+@admin_words.patch('/{word_id}', summary='Update word info')
 async def patch_word(word_id: Annotated[int, Path(ge=1)],
                      word: WordPatch) -> AdminWordOut:
+    """## Update the info for the word with *word_id*
+    At least one field should be provided."""
     db_word = db_manager.get_word_by_id(word_id)
     check_for_exception(db_word, 404)
     stored_word_model = AdminWordOut(**serialization.admin_word_from_word(db_word).__dict__)
@@ -328,7 +332,7 @@ async def patch_word(word_id: Annotated[int, Path(ge=1)],
     return serialization.admin_word_from_word(updated_db_word)
 
 
-@admin_user_topics.get('/{user_id}')
+@admin_user_topics.get('/{user_id}', summary='Show user topics')
 async def get_user_topics(
         user_id: Annotated[int, Path(title='User ID', ge=1)],
         limit: Annotated[int, Query(title='topics limit', description='topics per request', ge=1, le=100)] = 25,
@@ -336,6 +340,7 @@ async def get_user_topics(
         sort_by: Literal['id', 'name'] = 'id',
         desc: Annotated[bool, Query(description='true - descending')] = False
 ) -> list[TopicOut]:
+    """## Retrieve topics used by a user with *user_id*"""
     db_user = db_manager.get_user_by_id(user_id)
     check_for_exception(db_user, 404)
     user_topics = db_manager.get_user_topics(user_id, limit, skip, sort_by, desc)
@@ -343,7 +348,7 @@ async def get_user_topics(
     return user_topics
 
 
-@admin_user_topics.get('/{user_id}/{topic_id}/words')
+@admin_user_topics.get('/{user_id}/{topic_id}/words', summary='Show words for user topic')
 async def get_user_topic_words(
         user_id: Annotated[int, Path(title='User ID', ge=1)],
         topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
@@ -352,23 +357,26 @@ async def get_user_topic_words(
         sort_by: Literal['id', 'word_id', 'word', 'fails', 'success', 'last_shown'] = 'id',
         desc: Annotated[bool, Query(description='true - descending')] = False
 ) -> list[AdminUserWordOut]:
+    """## Retrieve all words for user topic"""
     user_topic_words = db_manager.get_user_topic_words(user_id, topic_id, limit, skip, sort_by, desc)
     check_for_exception(user_topic_words, 404)
     return serialization.admin_wordlist_out_from_user_words(user_topic_words, sort_by)
 
 
-@admin_user_topics.put('/{user_id}/{topic_id}')
+@admin_user_topics.put('/{user_id}/{topic_id}', summary='Update user topic name')
 async def update_user_topic(user_id: Annotated[int, Path(title='User ID', ge=1)],
                             topic_id: Annotated[int, Path(title='Topic ID', ge=1)],
                             topic_name: str) -> TopicOut:
+    """## Update the name of topic with *topic_id* for user with *user_id*"""
     user_topic = db_manager.update_user_topic(user_id, topic_id, topic_name)
     check_for_exception(user_topic, 404)
     return user_topic
 
 
-@admin_user_topics.delete('/{user_id}/{topic_id}')
+@admin_user_topics.delete('/{user_id}/{topic_id}', summary='Delete user topic')
 async def remove_user_topic(user_id: Annotated[int, Path(title='User ID', ge=1)],
                             topic_id: Annotated[int, Path(title='Topic ID', ge=1)]) -> TopicOut:
+    """## Remove topic with *topic_id* for user with *user_id*"""
     user_topic = db_manager.delete_user_topic(user_id, topic_id)
     check_for_exception(user_topic, 404)
     return user_topic
