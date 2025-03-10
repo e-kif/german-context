@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from data.schemas import ContextSentence, BaseModel
 from typing import Type
 import os
+import asyncio
 
 load_dotenv()
 
@@ -14,7 +15,16 @@ class GeneralAnswer(BaseModel):
 
 
 def build_sentence_prompt(topic: str, level: str, words: list[str]) -> str:
-    return f'Generate unique german sentence ({level} level) and its exact translation into english on topic "{topic}" using all of the following words: {words}'
+    levels = {
+        'A1': 'A simple sentence with a subject and verb in the Präsens tense - A1 level',
+        'A2': 'A compound sentence that connects two main clauses using a conjunction - A2 level',
+        'B1': 'A complex sentence featuring a main clause and a subordinate clause (Nebensatz) - B1 level',
+        'B2': 'A complex sentence that uses a subordinate clause to express contrast - B2 level',
+        'C1': 'A sophisticated sentence with a relative clause (Relativsatz) and a conjunction that connects contrasting ideas - C1 level',
+        'C2': 'A complex sentence containing an abstract noun, a subordinate clause, and the ability to express nuanced thoughts clearly - C2 level'
+    }
+    return (f'Generate a single unique german sentence that have some sense ({levels[level]}) and its exact translation '
+            f'into english on topic "{topic}" using all of the following words: {words}')
 
 
 async def ai_request(prompt: str, model: str = os.getenv('AI_MODEL'), schema: ContextSentence | None = ContextSentence):
@@ -22,7 +32,8 @@ async def ai_request(prompt: str, model: str = os.getenv('AI_MODEL'), schema: Co
     data = dict(
         model=model,
         prompt=prompt,
-        stream=False
+        stream=False,
+        options={'temperature': 0.72}
     )
     if schema:
         data['format'] = schema.model_json_schema()
@@ -36,6 +47,6 @@ async def ai_request(prompt: str, model: str = os.getenv('AI_MODEL'), schema: Co
 
 if __name__ == '__main__':
     prompt_ = build_sentence_prompt('auto', 'C1', ['Spiegel (Noun)', 'Lenkrad (Noun)'])
-    ai = ai_request(prompt_)
+    ai = asyncio.run(ai_request(prompt_))
     print(f'{type(ai)=}')
     print(f'{ai}')
