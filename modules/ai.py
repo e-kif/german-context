@@ -2,7 +2,6 @@ import requests
 import json
 from dotenv import load_dotenv
 from data.schemas import ContextSentence, BaseModel
-from typing import Type
 import os
 import asyncio
 
@@ -20,8 +19,10 @@ def build_sentence_prompt(topic: str, level: str, words: list[str]) -> str:
         'A2': 'A compound sentence that connects two main clauses using a conjunction - A2 level',
         'B1': 'A complex sentence featuring a main clause and a subordinate clause (Nebensatz) - B1 level',
         'B2': 'A complex sentence that uses a subordinate clause to express contrast - B2 level',
-        'C1': 'A sophisticated sentence with a relative clause (Relativsatz) and a conjunction that connects contrasting ideas - C1 level',
-        'C2': 'A complex sentence containing an abstract noun, a subordinate clause, and the ability to express nuanced thoughts clearly - C2 level'
+        'C1': 'A sophisticated sentence with a relative clause (Relativsatz) '
+              'and a conjunction that connects contrasting ideas - C1 level',
+        'C2': 'A complex sentence containing an abstract noun, a subordinate clause, '
+              'and the ability to express nuanced thoughts clearly - C2 level'
     }
     return (f'Generate a single unique german sentence that have some sense ({levels[level]}) and its exact translation '
             f'into english on topic "{topic}" using all of the following words: {words}')
