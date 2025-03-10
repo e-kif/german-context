@@ -22,6 +22,8 @@ async def generate_sentence_from_topic(
     check_for_exception(db_topic_user_words, 404)
     prompt_words = [f'{user_word.word.word} ({user_word.word.word_type.name})' for user_word in db_topic_user_words]
     topic = db_manager.get_topic_by_id(topic_id).name
+    if level == 'user_level':
+        level = current_user.level
     prompt = ai.build_sentence_prompt(topic, level, prompt_words)
     ai_response = await ai.ai_request(prompt)
     check_for_exception(ai_response, 504)
