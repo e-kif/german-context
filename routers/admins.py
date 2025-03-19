@@ -46,7 +46,7 @@ async def add_user(user: UserInAdmin) -> UserOutAdmin:
     )
     check_for_exception(new_user, 409)
     db_manager.assign_user_role(new_user.id, user.role)
-    return new_user
+    return serialization.user_out_admin(new_user)
 
 
 @admin_users.get('/me', summary="Show admin's info")
