@@ -67,9 +67,11 @@ async def get_user(user_id: Annotated[int, Path(ge=1, title='User ID')]) -> User
 async def remove_user(user_id: Annotated[int, Path(title='User ID', ge=1)]) -> UserOutAdmin:
     """## Remove a user with *user_id* from the app
     This action is irreversible. All user_words and user topic will be deleted as well."""
-    delete_user = db_manager.delete_user(user_id)
-    check_for_exception(delete_user, 404)
-    return serialization.user_out_admin(delete_user)
+    user_delete = db_manager.get_user_by_id(user_id)
+    check_for_exception(user_delete, 404)
+    user_delete = serialization.user_out_admin(user_delete)
+    db_manager.delete_user(user_id)
+    return user_delete
 
 
 @admin_users.put('/{user_id}', summary="Update user's info")
