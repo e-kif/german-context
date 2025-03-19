@@ -33,3 +33,25 @@ def test_user_non_authenticated(client):
             response = client.__getattribute__(method)(endpoint)
             assert response.status_code == 401
             assert response.json() == {'detail': 'Not authenticated'}
+
+
+def test_admin_not_authenticated(client):
+    endpoints = {
+        '/admin/users': ['get'],
+        '/admin/users/add': ['post'],
+        '/admin/users/me': ['get'],
+        '/admin/users/1': ['get', 'delete', 'put', 'patch'],
+        '/admin/user_words/1': ['get', 'post'],
+        '/admin/user_words/words/1': ['get', 'delete', 'patch', 'put'],
+        '/admin/user_topics/1': ['get'],
+        '/admin/user_topics/1/1/words': ['get'],
+        '/admin/user_topics/1/1': ['put', 'delete'],
+        '/admin/words': ['get', 'post'],
+        '/admin/words/suggest': ['get'],
+        '/admin/words/1': ['get', 'delete', 'put', 'patch']
+    }
+    for endpoint, methods in endpoints.items():
+        for method in methods:
+            response = client.__getattribute__(method)(endpoint)
+            assert response.status_code == 401
+            assert response.json() == {'detail': 'Not authenticated'}
