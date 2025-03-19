@@ -33,6 +33,9 @@ class DataManager:
             result = self.session.query(User).filter_by(username=username).one()
         except exc.NoResultFound:
             result = f'User with username "{username}" was not found.'
+        except exc.PendingRollbackError:
+            self.session.rollback()
+            result = 'Try one more time, please.'
         return result
 
     def get_user_by_email(self, email):
