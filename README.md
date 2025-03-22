@@ -5,16 +5,23 @@ enhanced by Generative AI to provide context and usage examples for vocabulary.
 
 ## Table of Contents
 
-* [General Info](#general-information)
-* [Technologies Used](#technologies-used)
 * [Features](#features)
+* [Video Demo](#video-demo)
+* [Technologies Used](#technologies-used)
 * [Setup](#setup)
 * [Usage](#usage)
 * [Project Status](#project-status)
 
-## General Information
+
+## Features
 
 Coming soon...
+
+## Video Demo
+
+Click the image below to watch the demo:
+
+[![Watch the Demo](https://img.youtube.com/vi/zaBo9UkFcSU/maxresdefault.jpg)](https://youtu.be/zaBo9UkFcSU)
 
 ## Technologies Used
 
@@ -25,17 +32,16 @@ Coming soon...
 - __Ollama + Deepseek models__: For generating contextual examples using Generative AI.
 - __JWT (JSON Web Tokens)__: For secure user authentication.
 
-## Features
-
-Coming soon...
 
 ## Setup
 
 Coming soon...
 
+
 ## Usage
 
 Coming soon...
+
 
 ## Project Status
 
