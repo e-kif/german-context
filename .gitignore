@@ -2,4 +2,5 @@
 .venv
 .idea
 __pycache__/
-data/__pycache__log_conf.yaml
+data/__pycache__
+log_conf.yaml
