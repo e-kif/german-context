@@ -16,6 +16,14 @@ def test_read_home(client):
     assert response.json() == {'message': 'Welcome to the German-Context App!'}
 
 
+def check_endpoints_authentication(endpoints: dict, client):
+    for endpoint, methods in endpoints.items():
+        for method in methods:
+            response = client.__getattribute__(method)(endpoint)
+            assert response.status_code == 401
+            assert response.json() == {'detail': 'Not authenticated'}
+
+
 def test_user_non_authenticated(client):
     endpoints = {
         '/users/me': ['get', 'put', 'delete', 'patch'],
@@ -28,11 +36,7 @@ def test_user_non_authenticated(client):
         '/user_cards/random': ['get'],
         '/user_cards/update_info/1': ['get']
     }
-    for endpoint, methods in endpoints.items():
-        for method in methods:
-            response = client.__getattribute__(method)(endpoint)
-            assert response.status_code == 401
-            assert response.json() == {'detail': 'Not authenticated'}
+    check_endpoints_authentication(endpoints, client)
 
 
 def test_admin_not_authenticated(client):
@@ -50,8 +54,4 @@ def test_admin_not_authenticated(client):
         '/admin/words/suggest': ['get'],
         '/admin/words/1': ['get', 'delete', 'put', 'patch']
     }
-    for endpoint, methods in endpoints.items():
-        for method in methods:
-            response = client.__getattribute__(method)(endpoint)
-            assert response.status_code == 401
-            assert response.json() == {'detail': 'Not authenticated'}
+    check_endpoints_authentication(endpoints, client)
