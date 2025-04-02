@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 import routers
 
-app = FastAPI(title='German Context App',
+app = FastAPI(title='Brain Germination App',
               description="The app aims to help users study some German showing user's words in different contexts.")
 
 app.include_router(routers.home_routes)
