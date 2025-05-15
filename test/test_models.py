@@ -1,4 +1,6 @@
-from data.models import Role, UserRole, User, Word, UserWord, Topic, WordType, WordExample
+from datetime import datetime
+from data.models import (Role, UserRole, User, Word, UserWord, Topic,
+                         WordType, WordExample, UserWordTranslation)
 
 
 def test_role():
@@ -52,4 +54,20 @@ def test_word_example():
 
 
 def test_user_word():
-    pass
+    tester = User(id=1, username='tester', level='A1')
+    table = Word(id=1, word='der Tisch', english='Table', level='A1')
+    user_table = UserWord(id=1, user_id=1, word_id=1, fails=7,
+                          success=4, last_shown=datetime.now(),
+                          user=tester, word=table)
+    assert user_table.__repr__() == f'1. user=tester, word=der Tisch: (fails=7, success=4, last_shown={
+        user_table.last_shown})'
+
+
+def test_user_word_translation():
+    custom_translation = UserWordTranslation(
+        id=7, user_word_id=12, translation='Vehicle')
+    car = Word(id=8, word='das Auto', english='Car', level='A1')
+    driver = User(id=2, username='driver', level='A1')
+    drivers_car = UserWord(id=12, word_id=8, user_id=2, user=driver, word=car)
+    custom_translation.user_word = drivers_car
+    assert custom_translation.__repr__() == '7. user=driver, word=das Auto - Vehicle'
